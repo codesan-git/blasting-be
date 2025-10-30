@@ -106,6 +106,32 @@ export interface SystemLog {
   created_at?: string;
 }
 
+export interface MessageStatRow {
+  channel: string;
+  status: string;
+  count: number;
+}
+
+export interface MessageStatsByDateRow {
+  date: string;
+  channel: string;
+  status: string;
+  count: number;
+}
+
+export interface FormattedStats {
+  email: StatusCounts;
+  whatsapp: StatusCounts;
+  total: StatusCounts;
+}
+
+interface StatusCounts {
+  queued: number;
+  processing: number;
+  sent: number;
+  failed: number;
+}
+
 export class DatabaseService {
   // Message Logs
   static logMessage(data: MessageLog): number {
@@ -197,7 +223,7 @@ export class DatabaseService {
     return stmt.all(...params) as MessageLog[];
   }
 
-  static getMessageStats(): any {
+  static getMessageStats(): MessageStatRow[] {
     const stmt = db.prepare(`
       SELECT 
         channel,
@@ -207,10 +233,10 @@ export class DatabaseService {
       GROUP BY channel, status
     `);
 
-    return stmt.all();
+    return stmt.all() as MessageStatRow[];
   }
 
-  static getMessageStatsByDate(days: number = 7): any {
+  static getMessageStatsByDate(days: number = 7): MessageStatsByDateRow[] {
     const stmt = db.prepare(`
       SELECT 
         DATE(created_at) as date,
@@ -223,7 +249,7 @@ export class DatabaseService {
       ORDER BY date DESC
     `);
 
-    return stmt.all();
+    return stmt.all() as MessageStatsByDateRow[];
   }
 
   // API Logs
@@ -258,7 +284,11 @@ export class DatabaseService {
   }
 
   // System Logs
-  static logSystem(level: string, message: string, metadata?: any): number {
+  static logSystem(
+    level: string,
+    message: string,
+    metadata?: Record<string, unknown>
+  ): number {
     const stmt = db.prepare(`
       INSERT INTO system_logs (level, message, metadata)
       VALUES (?, ?, ?)

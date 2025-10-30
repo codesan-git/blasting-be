@@ -1,9 +1,12 @@
-import express, { Application, Request, Response } from "express";
+// src/app.ts
+import express, { Application, Request, Response, NextFunction } from "express";
 import emailRoutes from "./routes/email.routes";
 import messageRoutes from "./routes/message.routes";
 import templateRoutes from "./routes/template.routes";
 import logsRoutes from "./routes/logs.routes";
+import { getDashboardStats } from "./controllers/dashboard.controller";
 import logger from "./utils/logger";
+import { apiLogger } from "./middleware/apiLogger";
 import {
   apiLimiter,
   blastLimiter,
@@ -19,8 +22,11 @@ app.use(express.urlencoded({ extended: true }));
 // Trust proxy - important for rate limiting behind reverse proxy
 app.set("trust proxy", 1);
 
+// API logging middleware
+app.use(apiLogger);
+
 // Request logging middleware
-app.use((req: Request, res: Response, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.path}`, {
     ip: req.ip,
     body: req.body,
@@ -37,6 +43,9 @@ app.use("/api/email", blastLimiter, emailRoutes);
 app.use("/api/messages", blastLimiter, messageRoutes);
 app.use("/api/templates", templateLimiter, templateRoutes);
 app.use("/api/logs", logsRoutes);
+
+// Dashboard endpoint
+app.get("/api/dashboard", getDashboardStats);
 
 // Health check (no rate limit)
 app.get("/health", (req: Request, res: Response) => {
@@ -63,7 +72,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: any) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   logger.error("Unhandled error:", err);
   res.status(500).json({ message: "Internal server error" });
 });
