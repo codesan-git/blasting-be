@@ -1,0 +1,48 @@
+export enum ChannelType {
+  EMAIL = "email",
+  WHATSAPP = "whatsapp",
+  SMS = "sms",
+  PUSH = "push",
+  BOTH = "both", // Deprecated, kept for backward compatibility
+}
+
+export enum TemplateType {
+  WELCOME = "welcome",
+  PROMOTION = "promotion",
+  NOTIFICATION = "notification",
+  REMINDER = "reminder",
+  CUSTOM = "custom",
+}
+
+export interface TemplateVariable {
+  [key: string]: string | number;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  type: TemplateType;
+  channel: ChannelType;
+  subject?: string; // For email
+  body: string;
+  variables: string[]; // List of variables like ['name', 'date', 'amount']
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MessageRecipient {
+  email?: string;
+  phone?: string; // WhatsApp number
+  name: string;
+  variables?: TemplateVariable; // Custom variables per recipient
+}
+
+export interface SendMessageRequest {
+  recipients: MessageRecipient[];
+  channels: string[]; // NEW: Array of channels ['email', 'whatsapp', 'sms']
+  channel?: string; // OLD: Deprecated but kept for backward compatibility
+  templateId: string;
+  globalVariables?: TemplateVariable; // Variables applied to all recipients
+  from?: string; // Email sender
+  scheduledAt?: Date; // Optional: schedule for later
+}

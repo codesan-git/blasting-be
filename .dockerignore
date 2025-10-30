@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+logs
+.env
+.git
+.gitignore
+README.md
+*.md
+.vscode
+.idea
+src
+tsconfig.json
+jest.config.js
+test-api.sh
+*.test.ts
