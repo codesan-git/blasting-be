@@ -5,21 +5,26 @@ export interface EmailRecipient {
   name: string;
 }
 
+export interface WhatsAppRecipient {
+  phone: string;
+  name: string;
+}
+
 export interface EmailJobData {
+  channel: ChannelType.EMAIL;
   recipient: EmailRecipient;
   subject: string;
   body: string;
   from: string;
-  channel: ChannelType;
 }
 
 export interface WhatsAppJobData {
-  recipient: {
-    phone: string;
-    name: string;
-  };
-  message: string;
-  channel: ChannelType;
+  channel: ChannelType.WHATSAPP;
+  recipient: WhatsAppRecipient;
+
+  message?: string;
+  templateName?: string;
+  templateData?: Record<string, string>;
 }
 
 export type MessageJobData = EmailJobData | WhatsAppJobData;

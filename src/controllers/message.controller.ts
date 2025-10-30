@@ -156,7 +156,8 @@ export const sendMessageBlast = async (
               phone: recipient.phone,
               name: recipient.name,
             },
-            message: rendered.body,
+            templateName: template.name,
+            templateData: variables as Record<string, string>,
             channel: ChannelType.WHATSAPP,
           };
           messageJobs.push(whatsappJob);

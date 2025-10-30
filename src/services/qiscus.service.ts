@@ -24,11 +24,10 @@ interface QiscusTemplate {
   components: QiscusTemplateComponent[];
 }
 
-interface SendWhatsAppRequest {
+interface SendWhatsAppTemplateRequest {
   to: string;
-  type: "template" | "text";
-  template?: QiscusTemplate;
-  text?: { body: string };
+  type: "template";
+  template: QiscusTemplate;
 }
 
 interface QiscusResponse {
@@ -44,13 +43,13 @@ interface SendResult {
   error?: string;
 }
 
-class QiscusService {
+export class QiscusService {
   private appId: string;
   private secretKey: string;
   private channelId: string;
   private baseUrl: string;
   private namespace: string;
-  private isConfigured: boolean = false;
+  private isConfigured = false;
 
   constructor() {
     this.appId = process.env.QISCUS_APP_ID || "";
@@ -61,13 +60,11 @@ class QiscusService {
     this.namespace = process.env.QISCUS_NAMESPACE || "";
 
     if (!this.appId || !this.secretKey || !this.channelId) {
-      logger.warn(
-        "Qiscus WhatsApp not configured. WhatsApp sending will be simulated."
-      );
+      logger.warn("Qiscus not fully configured — using SIMULATION mode");
       this.isConfigured = false;
     } else {
       this.isConfigured = true;
-      logger.info("Qiscus WhatsApp Service initialized successfully", {
+      logger.info("Qiscus WhatsApp Service initialized", {
         appId: this.appId,
         channelId: this.channelId,
       });
@@ -89,8 +86,7 @@ class QiscusService {
     try {
       const components: QiscusTemplateComponent[] = [];
 
-      // Header component
-      if (data.headerParams && data.headerParams.length > 0) {
+      if (data.headerParams?.length) {
         components.push({
           type: "header",
           parameters: data.headerParams.map((text) => ({
@@ -100,8 +96,7 @@ class QiscusService {
         });
       }
 
-      // Body component
-      if (data.bodyParams && data.bodyParams.length > 0) {
+      if (data.bodyParams?.length) {
         components.push({
           type: "body",
           parameters: data.bodyParams.map((text) => ({
@@ -111,19 +106,18 @@ class QiscusService {
         });
       }
 
-      // Button components
-      if (data.buttonParams) {
-        data.buttonParams.forEach((button) => {
+      if (data.buttonParams?.length) {
+        data.buttonParams.forEach((btn) => {
           components.push({
             type: "button",
             sub_type: "url",
-            index: button.index,
-            parameters: [{ type: "text" as const, text: button.text }],
+            index: btn.index,
+            parameters: [{ type: "text", text: btn.text }],
           });
         });
       }
 
-      const payload: SendWhatsAppRequest = {
+      const payload: SendWhatsAppTemplateRequest = {
         to: data.to,
         type: "template",
         template: {
@@ -139,6 +133,8 @@ class QiscusService {
 
       const url = `${this.baseUrl}/whatsapp/v1/${this.appId}/${this.channelId}/messages`;
 
+      logger.info("Sending WhatsApp template via Qiscus", payload);
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -151,117 +147,54 @@ class QiscusService {
 
       const result = (await response.json()) as QiscusResponse;
 
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(result.message || `HTTP ${response.status}`);
-      }
 
-      logger.info("WhatsApp message sent successfully via Qiscus", {
+      logger.info("WhatsApp message sent successfully", {
         to: data.to,
-        templateName: data.templateName,
+        template: data.templateName,
         messageId: result.id || result.message_id,
       });
 
-      return {
-        success: true,
-        messageId: result.id || result.message_id,
-      };
-    } catch (error) {
+      return { success: true, messageId: result.id || result.message_id };
+    } catch (err) {
       logger.error("Failed to send WhatsApp via Qiscus", {
         to: data.to,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: err instanceof Error ? err.message : err,
       });
-
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  }
-
-  async sendTextMessage(to: string, text: string): Promise<SendResult> {
-    if (!this.isConfigured) {
-      return this.simulateWhatsAppSending(to, "text");
-    }
-
-    try {
-      const payload: SendWhatsAppRequest = {
-        to,
-        type: "text",
-        text: { body: text },
-      };
-
-      const url = `${this.baseUrl}/whatsapp/v1/${this.appId}/${this.channelId}/messages`;
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "qiscus-app-id": this.appId,
-          "qiscus-secret-key": this.secretKey,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = (await response.json()) as QiscusResponse;
-
-      if (!response.ok) {
-        throw new Error(result.message || `HTTP ${response.status}`);
-      }
-
-      logger.info("WhatsApp text message sent successfully", {
-        to,
-        messageId: result.id || result.message_id,
-      });
-
-      return {
-        success: true,
-        messageId: result.id || result.message_id,
-      };
-    } catch (error) {
-      logger.error("Failed to send WhatsApp text", {
-        to,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: err instanceof Error ? err.message : "Unknown error",
       };
     }
   }
 
   private async simulateWhatsAppSending(
     to: string,
-    template: string
+    templateName: string
   ): Promise<SendResult> {
     return new Promise((resolve) => {
       setTimeout(() => {
         const isSuccess = Math.random() > 0.1;
-
         if (isSuccess) {
           const messageId = `simulated-wa-${Date.now()}-${Math.random()
             .toString(36)
-            .substr(2, 9)}`;
-          logger.info("WhatsApp message simulated successfully", {
+            .slice(2, 9)}`;
+          logger.info("Simulated WhatsApp message sent", {
             to,
-            template,
+            templateName,
             messageId,
-            mode: "SIMULATION",
           });
           resolve({ success: true, messageId });
         } else {
-          logger.warn("WhatsApp simulation failed", {
-            to,
-            template,
-            mode: "SIMULATION",
-          });
+          logger.warn("Simulated WhatsApp send failed", { to, templateName });
           resolve({ success: false, error: "Simulated failure" });
         }
-      }, 500);
+      }, 400);
     });
   }
 
-  getStatus(): { configured: boolean; appId?: string; channelId?: string } {
+  getStatus() {
     return {
       configured: this.isConfigured,
       appId: this.appId,
