@@ -20,6 +20,10 @@ export interface WhatsAppJobData {
   };
   message: string;
   channel: ChannelType;
+  // Qiscus-specific properties
+  qiscusComponents?: any[];
+  qiscusTemplateName?: string;
+  qiscusNamespace?: string;
 }
 
 export type MessageJobData = EmailJobData | WhatsAppJobData;

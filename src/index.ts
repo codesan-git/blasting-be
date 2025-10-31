@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
+dotenv.config();
 import app from "./app";
 import logger from "./utils/logger";
 import { emailWorker } from "./workers/email.worker";
 import { messageWorker } from "./workers/message.worker";
 import { createRedisConnection } from "./config/redis";
 import smtpService from "./services/smtp.service";
-
-dotenv.config();
+import qiscusService from "./services/qiscus.service";
 
 const PORT = process.env.PORT || 3000;
 
@@ -46,10 +46,28 @@ const testSMTPConnection = async () => {
   }
 };
 
+// Check Qiscus configuration
+const checkQiscusConfig = () => {
+  const status = qiscusService.getStatus();
+
+  if (status.configured) {
+    logger.info("Qiscus WhatsApp configured successfully", {
+      baseUrl: status.baseUrl,
+      appId: status.appId,
+      channelId: status.channelId,
+    });
+  } else {
+    logger.info(
+      "Qiscus WhatsApp not configured. WhatsApp messages will be simulated."
+    );
+  }
+};
+
 const startServer = async () => {
   try {
     await testRedisConnection();
     await testSMTPConnection();
+    checkQiscusConfig();
 
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
@@ -59,11 +77,17 @@ const startServer = async () => {
       logger.info("Rate limiting enabled");
 
       const smtpStatus = smtpService.getStatus();
-      if (smtpStatus.configured) {
-        logger.info("SMTP Mode: REAL EMAIL SENDING");
-      } else {
-        logger.info("SMTP Mode: SIMULATION");
-      }
+      const qiscusStatus = qiscusService.getStatus();
+
+      logger.info("=== Service Status ===");
+      logger.info(
+        `SMTP: ${smtpStatus.configured ? "CONFIGURED" : "SIMULATION"}`
+      );
+      logger.info(
+        `Qiscus WhatsApp: ${
+          qiscusStatus.configured ? "CONFIGURED" : "SIMULATION"
+        }`
+      );
     });
   } catch (error) {
     logger.error("Failed to start server:", error);

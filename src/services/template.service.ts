@@ -3,12 +3,13 @@ import {
   TemplateType,
   ChannelType,
   TemplateVariable,
+  QiscusTemplateComponent,
 } from "../types/template.types";
 
-// In-memory template storage (bisa diganti dengan database)
+// In-memory template storage
 const templates: Map<string, Template> = new Map();
 
-// Pre-defined templates
+// Pre-defined templates including Qiscus WhatsApp template
 const defaultTemplates: Template[] = [
   {
     id: "email-welcome-001",
@@ -33,113 +34,82 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "email-promo-001",
-    name: "Promotional Email",
-    type: TemplateType.PROMOTION,
-    channel: ChannelType.EMAIL,
-    subject: "🎉 Special Offer: {{discountPercent}}% OFF!",
+    id: "invoicing_testing_v1_2",
+    name: "Invoice Notification (Multi-Channel)",
+    type: TemplateType.INVOICE,
+    channel: ChannelType.BOTH, // Changed to BOTH
+    subject: "Invoice {{invoiceNumber}} - {{period}}", // Added for email
     body: `
-      <h1>Exclusive Offer for {{name}}! 🎁</h1>
-      <p>Get <strong>{{discountPercent}}% OFF</strong> on your next purchase!</p>
-      <p>Use code: <strong>{{promoCode}}</strong></p>
-      <p>Valid until: {{expiryDate}}</p>
-      <p>Don't miss out on this amazing deal!</p>
-      <a href="{{shopUrl}}" style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; display: inline-block; border-radius: 4px;">Shop Now</a>
-    `,
-    variables: [
-      "name",
-      "discountPercent",
-      "promoCode",
-      "expiryDate",
-      "shopUrl",
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "wa-welcome-001",
-    name: "WhatsApp Welcome Message",
-    type: TemplateType.WELCOME,
-    channel: ChannelType.WHATSAPP,
-    body: `Halo *{{name}}*! 👋
-
-Selamat datang di *{{companyName}}*! 
-
-Terima kasih telah bergabung dengan kami. Akun Anda telah berhasil dibuat.
-
-📧 Email: {{email}}
-📅 Tanggal Registrasi: {{date}}
-
-Jika ada pertanyaan, silakan hubungi kami kapan saja.
-
-Salam,
-Tim {{companyName}}`,
-    variables: ["name", "companyName", "email", "date"],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "wa-promo-001",
-    name: "WhatsApp Promotional Message",
-    type: TemplateType.PROMOTION,
-    channel: ChannelType.WHATSAPP,
-    body: `🎉 *Penawaran Spesial untuk {{name}}!* 🎁
-
-Dapatkan diskon *{{discountPercent}}%* untuk pembelian Anda!
-
-🎫 Kode Promo: *{{promoCode}}*
-⏰ Berlaku hingga: {{expiryDate}}
-
-Jangan lewatkan kesempatan ini!
-
-🛍️ Belanja sekarang: {{shopUrl}}`,
-    variables: [
-      "name",
-      "discountPercent",
-      "promoCode",
-      "expiryDate",
-      "shopUrl",
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "email-reminder-001",
-    name: "Payment Reminder Email",
-    type: TemplateType.REMINDER,
-    channel: ChannelType.EMAIL,
-    subject: "Payment Reminder - Invoice #{{invoiceNumber}}",
-    body: `
-      <h1>Payment Reminder</h1>
+      <h1>Invoice Notification</h1>
       <p>Dear {{name}},</p>
-      <p>This is a friendly reminder that payment for Invoice #{{invoiceNumber}} is due.</p>
-      <p><strong>Amount Due:</strong> {{currency}}{{amount}}</p>
-      <p><strong>Due Date:</strong> {{dueDate}}</p>
-      <p>Please make your payment at your earliest convenience.</p>
+      <p>We hope this email finds you well. Please find your invoice details for <strong>{{period}}</strong>:</p>
+      <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+        <tr style="background-color: #f2f2f2;">
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Invoice Number</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{invoiceNumber}}</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Period</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{period}}</td>
+        </tr>
+        <tr style="background-color: #f2f2f2;">
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Amount</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{amount}}</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Company</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{companyName}}</td>
+        </tr>
+      </table>
+      <p>Please process the payment at your earliest convenience.</p>
       <p>Thank you for your business!</p>
+      <p>Best regards,<br>{{companyName}} Team</p>
     `,
-    variables: ["name", "invoiceNumber", "amount", "currency", "dueDate"],
+    variables: ["name", "period", "invoiceNumber", "amount", "companyName"],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "invoicing_testing_v1_2",
+      languageCode: "id",
+      headerVariables: ["period"],
+      bodyVariables: ["name", "period", "invoiceNumber", "amount"],
+      buttonVariables: ["invoiceNumber"],
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: "wa-reminder-001",
-    name: "WhatsApp Payment Reminder",
-    type: TemplateType.REMINDER,
-    channel: ChannelType.WHATSAPP,
-    body: `📋 *Pengingat Pembayaran*
-
-Halo {{name}},
-
-Ini adalah pengingat ramah bahwa pembayaran untuk Invoice #{{invoiceNumber}} akan jatuh tempo.
-
-💰 *Jumlah:* {{currency}}{{amount}}
-📅 *Jatuh Tempo:* {{dueDate}}
-
-Mohon lakukan pembayaran secepatnya.
-
-Terima kasih! 🙏`,
-    variables: ["name", "invoiceNumber", "amount", "currency", "dueDate"],
+    id: "email-invoice-001",
+    name: "Invoice Notification Email",
+    type: TemplateType.INVOICE,
+    channel: ChannelType.EMAIL,
+    subject: "Invoice {{invoiceNumber}} - {{period}}",
+    body: `
+      <h1>Invoice Notification</h1>
+      <p>Dear {{name}},</p>
+      <p>We hope this email finds you well. Please find your invoice details for <strong>{{period}}</strong>:</p>
+      <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+        <tr style="background-color: #f2f2f2;">
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Invoice Number</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{invoiceNumber}}</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Period</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{period}}</td>
+        </tr>
+        <tr style="background-color: #f2f2f2;">
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Amount</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{amount}}</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Company</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">{{companyName}}</td>
+        </tr>
+      </table>
+      <p>Please process the payment at your earliest convenience.</p>
+      <p>Thank you for your business!</p>
+      <p>Best regards,<br>{{companyName}} Team</p>
+    `,
+    variables: ["name", "invoiceNumber", "period", "amount", "companyName"],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -220,5 +190,55 @@ export class TemplateService {
       subject: template.subject ? renderedSubject : undefined,
       body: renderedBody,
     };
+  }
+
+  // Build Qiscus template components from variables
+  static buildQiscusComponents(
+    template: Template,
+    variables: TemplateVariable
+  ): QiscusTemplateComponent[] {
+    if (!template.qiscusConfig) {
+      throw new Error("Template does not have Qiscus configuration");
+    }
+
+    const components: QiscusTemplateComponent[] = [];
+    const config = template.qiscusConfig;
+
+    // Header component
+    if (config.headerVariables && config.headerVariables.length > 0) {
+      components.push({
+        type: "header",
+        parameters: config.headerVariables.map((varName) => ({
+          type: "text",
+          text: String(variables[varName] || ""),
+        })),
+      });
+    }
+
+    // Body component
+    if (config.bodyVariables && config.bodyVariables.length > 0) {
+      components.push({
+        type: "body",
+        parameters: config.bodyVariables.map((varName) => ({
+          type: "text",
+          text: String(variables[varName] || ""),
+        })),
+      });
+    }
+
+    // Button component (untuk dynamic URL)
+    if (config.buttonVariables && config.buttonVariables.length > 0) {
+      components.push({
+        type: "button",
+        sub_type: "url",
+        index: "0",
+        parameters: config.buttonVariables.map((varName) => ({
+          type: "text",
+          text: String(variables[varName] || ""),
+        })),
+      });
+    }
+
+    return components;
   }
 }

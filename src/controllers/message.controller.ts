@@ -37,7 +37,7 @@ export const sendMessageBlast = async (
       return;
     }
 
-    // Handle backward compatibility: convert old 'channel' to new 'channels' array
+    // Handle backward compatibility
     let selectedChannels: string[] = [];
 
     if (channels && Array.isArray(channels)) {
@@ -125,8 +125,6 @@ export const sendMessageBlast = async (
         phone: recipient.phone || "",
       };
 
-      const rendered = TemplateService.renderTemplate(template, variables);
-
       for (const selectedChannel of selectedChannels) {
         if (selectedChannel === "email" && recipient.email) {
           if (!from) {
@@ -136,6 +134,8 @@ export const sendMessageBlast = async (
             });
             return;
           }
+
+          const rendered = TemplateService.renderTemplate(template, variables);
 
           const emailJob: EmailJobData = {
             recipient: {
@@ -151,15 +151,42 @@ export const sendMessageBlast = async (
         }
 
         if (selectedChannel === "whatsapp" && recipient.phone) {
-          const whatsappJob: WhatsAppJobData = {
-            recipient: {
-              phone: recipient.phone,
-              name: recipient.name,
-            },
-            message: rendered.body,
-            channel: ChannelType.WHATSAPP,
-          };
-          messageJobs.push(whatsappJob);
+          // Check if template has Qiscus config
+          if (template.qiscusConfig) {
+            // Build Qiscus components
+            const qiscusComponents = TemplateService.buildQiscusComponents(
+              template,
+              variables
+            );
+
+            const whatsappJob: WhatsAppJobData = {
+              recipient: {
+                phone: recipient.phone,
+                name: recipient.name,
+              },
+              message: `WhatsApp template message: ${template.name}`,
+              channel: ChannelType.WHATSAPP,
+              qiscusComponents,
+              qiscusTemplateName: template.qiscusConfig.templateName,
+              qiscusNamespace: template.qiscusConfig.namespace,
+            };
+            messageJobs.push(whatsappJob);
+          } else {
+            // Regular WhatsApp message (simulated)
+            const rendered = TemplateService.renderTemplate(
+              template,
+              variables
+            );
+            const whatsappJob: WhatsAppJobData = {
+              recipient: {
+                phone: recipient.phone,
+                name: recipient.name,
+              },
+              message: rendered.body,
+              channel: ChannelType.WHATSAPP,
+            };
+            messageJobs.push(whatsappJob);
+          }
         }
 
         if (selectedChannel === "sms" && recipient.phone) {
@@ -224,6 +251,7 @@ export const sendMessageBlast = async (
       channels: selectedChannels,
       templateId,
       templateName: template.name,
+      qiscusEnabled: !!template.qiscusConfig,
     });
 
     res.status(200).json({
@@ -234,6 +262,7 @@ export const sendMessageBlast = async (
       template: {
         id: template.id,
         name: template.name,
+        qiscusEnabled: !!template.qiscusConfig,
       },
       jobIds,
     });

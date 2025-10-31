@@ -6,42 +6,9 @@ import {
   EmailJobData,
   WhatsAppJobData,
 } from "../types/email.types";
-import { ChannelType } from "../types/template.types";
 import smtpService from "../services/smtp.service";
+import qiscusService from "../services/qiscus.service";
 import DatabaseService from "../services/database.service";
-
-// Gunakan SMTP Service untuk mengirim email
-// const sendEmail = async (emailData: EmailJobData): Promise<void> => {
-//   const result = await smtpService.sendEmail({
-//     from: emailData.from,
-//     to: emailData.recipient.email,
-//     subject: emailData.subject,
-//     html: emailData.body,
-//   });
-
-//   if (!result.success) {
-//     throw new Error(result.error || "Failed to send email");
-//   }
-// };
-
-// Simulasi pengiriman WhatsApp (akan diimplementasi nanti)
-const sendWhatsApp = async (whatsappData: WhatsAppJobData): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const isSuccess = Math.random() > 0.1;
-
-      if (isSuccess) {
-        logger.info("WhatsApp message sent successfully (SIMULATED)", {
-          to: whatsappData.recipient.phone,
-          name: whatsappData.recipient.name,
-        });
-        resolve();
-      } else {
-        reject(new Error("Failed to send WhatsApp message"));
-      }
-    }, 800);
-  });
-};
 
 // Type guard untuk mengecek apakah data adalah EmailJobData
 function isEmailJobData(data: MessageJobData): data is EmailJobData {
@@ -50,7 +17,7 @@ function isEmailJobData(data: MessageJobData): data is EmailJobData {
 
 // Type guard untuk mengecek apakah data adalah WhatsAppJobData
 function isWhatsAppJobData(data: MessageJobData): data is WhatsAppJobData {
-  return "message" in data && !("subject" in data);
+  return data.channel === "whatsapp" && "message" in data;
 }
 
 export const messageWorker = new Worker<MessageJobData>(
@@ -74,6 +41,7 @@ export const messageWorker = new Worker<MessageJobData>(
       let messageId: string | undefined;
 
       if (isEmailJobData(job.data)) {
+        // Send Email via SMTP
         const result = await smtpService.sendEmail({
           from: job.data.from,
           to: job.data.recipient.email,
@@ -101,24 +69,60 @@ export const messageWorker = new Worker<MessageJobData>(
           messageId,
           job.attemptsMade + 1
         );
-      } else if (isWhatsAppJobData(job.data)) {
-        await sendWhatsApp(job.data);
 
-        logger.info(`WhatsApp job completed: ${job.id}`, {
-          recipient: job.data.recipient.phone,
-        });
+        return { success: true, channel: "email", messageId };
+      } else if (isWhatsAppJobData(job.data)) {
+        // Send WhatsApp via Qiscus
+        const whatsappData = job.data as WhatsAppJobData & {
+          qiscusComponents?: any[];
+          qiscusTemplateName?: string;
+          qiscusNamespace?: string;
+        };
+
+        // Jika ada qiscusComponents, gunakan Qiscus API
+        if (whatsappData.qiscusComponents && whatsappData.qiscusTemplateName) {
+          const result = await qiscusService.sendTemplateMessage(
+            whatsappData.recipient.phone,
+            whatsappData.qiscusTemplateName,
+            whatsappData.qiscusComponents,
+            whatsappData.qiscusNamespace
+          );
+
+          if (!result.success) {
+            throw new Error(result.error || "Failed to send WhatsApp message");
+          }
+
+          messageId = result.messageId;
+
+          logger.info(`WhatsApp job completed via Qiscus: ${job.id}`, {
+            recipient: whatsappData.recipient.phone,
+            template: whatsappData.qiscusTemplateName,
+            messageId,
+          });
+        } else {
+          // Fallback ke simulasi jika tidak ada Qiscus config
+          logger.warn(
+            "WhatsApp message sent without Qiscus template (simulated)",
+            {
+              recipient: whatsappData.recipient.phone,
+            }
+          );
+          messageId = `simulated-${Date.now()}`;
+        }
 
         // Log success to database
         DatabaseService.updateMessageStatus(
           job.id!,
           "sent",
           undefined,
-          undefined,
+          messageId,
           job.attemptsMade + 1
         );
+
+        return { success: true, channel: "whatsapp", messageId };
       }
 
-      return { success: true, channel: job.data.channel, messageId };
+      throw new Error("Unknown message type");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -143,10 +147,10 @@ export const messageWorker = new Worker<MessageJobData>(
   },
   {
     connection: redisConfig,
-    concurrency: 5, // Reduced from 10 untuk SMTP rate limiting
+    concurrency: 5,
     limiter: {
-      max: 10, // Max 10 jobs
-      duration: 1000, // per second
+      max: 10,
+      duration: 1000,
     },
   }
 );
