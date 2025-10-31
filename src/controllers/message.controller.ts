@@ -117,6 +117,7 @@ export const sendMessageBlast = async (
 
     // Process each recipient
     for (const recipient of recipients) {
+      // Merge all variables: globalVariables + recipient.variables + recipient info
       const variables: TemplateVariable = {
         ...globalVariables,
         ...recipient.variables,
@@ -124,6 +125,12 @@ export const sendMessageBlast = async (
         email: recipient.email || "",
         phone: recipient.phone || "",
       };
+
+      // Log variables for debugging
+      logger.debug("Processing recipient with variables", {
+        recipient: recipient.name,
+        variables,
+      });
 
       for (const selectedChannel of selectedChannels) {
         if (selectedChannel === "email" && recipient.email) {
@@ -135,7 +142,15 @@ export const sendMessageBlast = async (
             return;
           }
 
+          // Render template with variables
           const rendered = TemplateService.renderTemplate(template, variables);
+
+          // Log rendered content for debugging
+          logger.debug("Rendered email template", {
+            recipient: recipient.email,
+            subject: rendered.subject,
+            bodyLength: rendered.body.length,
+          });
 
           const emailJob: EmailJobData = {
             recipient: {

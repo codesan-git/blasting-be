@@ -66,6 +66,58 @@ app.get("/api/smtp/status", (req: Request, res: Response) => {
   });
 });
 
+// Add this to src/app.ts after other routes
+
+// Test template rendering endpoint
+app.post("/api/templates/test-render", (req: Request, res: Response) => {
+  try {
+    const { templateId, variables } = req.body;
+
+    if (!templateId) {
+      res.status(400).json({
+        success: false,
+        message: "templateId is required",
+      });
+      return;
+    }
+
+    const { TemplateService } = require("./services/template.service");
+    const template = TemplateService.getTemplateById(templateId);
+
+    if (!template) {
+      res.status(404).json({
+        success: false,
+        message: `Template '${templateId}' not found`,
+      });
+      return;
+    }
+
+    const rendered = TemplateService.renderTemplate(template, variables || {});
+
+    res.status(200).json({
+      success: true,
+      template: {
+        id: template.id,
+        name: template.name,
+        channel: template.channel,
+      },
+      variables: variables || {},
+      rendered: {
+        subject: rendered.subject,
+        body: rendered.body,
+        bodyLength: rendered.body.length,
+      },
+    });
+  } catch (error) {
+    logger.error("Error testing template:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to test template",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
 // 404 handler
 app.use((req: Request, res: Response) => {
   res.status(404).json({ message: "Route not found" });
