@@ -14,37 +14,51 @@ services:
     networks:
       - app-network
 
-  app:
-    build: .
-    container_name: email-blast-app
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      # SMTP Configuration (update these with your credentials)
-      - SMTP_HOST=${SMTP_HOST:-}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_SECURE=${SMTP_SECURE:-false}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASS=${SMTP_PASS:-}
-      # Rate Limiter
-      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
-      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-1000}
-      # Logging
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
-    depends_on:
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./logs:/app/logs
-      - ./data:/app/data
-    restart: unless-stopped
-    networks:
-      - app-network
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: email-blast-app
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=3000
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     # SMTP Configuration (update these)
+  #     - SMTP_HOST=${SMTP_HOST:-}
+  #     - SMTP_PORT=${SMTP_PORT:-587}
+  #     - SMTP_SECURE=${SMTP_SECURE:-false}
+  #     - SMTP_USER=${SMTP_USER:-}
+  #     - SMTP_PASS=${SMTP_PASS:-}
+  #     # Qiscus Configuration
+  #     - QISCUS_APP_ID=${QISCUS_APP_ID:-}
+  #     - QISCUS_SECRET_KEY=${QISCUS_SECRET_KEY:-}
+  #     - QISCUS_CHANNEL_ID=${QISCUS_CHANNEL_ID:-}
+  #     - QISCUS_BASE_URL=${QISCUS_BASE_URL:-}
+  #     - QISCUS_NAMESPACE=${QISCUS_NAMESPACE:-}
+  #     # Rate Limiter
+  #     - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+  #     - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-1000}
+  #     # Logging
+  #     - LOG_LEVEL=${LOG_LEVEL:-info}
+  #     - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./src:/app/src # biar bisa debug/edit TS lokal
+  #     - ./dist:/app/dist # mount hasil build
+  #     - ./logs:/app/logs
+  #     - ./data:/app/data
+  #   command: >
+  #     sh -c "npm install &&
+  #            npm run build &&
+  #            node dist/index.js"
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
 
 volumes:
   redis-data:

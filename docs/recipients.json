@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Satria",
+    "email": "satria.agung@mmdn.co.id",
+    "phone": "6285779579424",
+    "variables": {
+      "invoice_no": "INV-001"
+    }
+  },
+  {
+    "name": "Ageng",
+    "email": "ageng.bagus@umn.ac.id",
+    "phone": "6281213670721",
+    "variables": {
+      "invoice_no": "INV-002"
+    }
+  },
+  {
+    "name": "Woly",
+    "email": "william.suanto@mmdn.co.id",
+    "phone": "089678537538",
+    "variables": {
+      "invoice_no": "INV-003"
+    }
+  }
+]

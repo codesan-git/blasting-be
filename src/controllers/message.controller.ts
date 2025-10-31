@@ -28,7 +28,6 @@ export const sendMessageBlast = async (
       from,
     }: SendMessageRequest = req.body;
 
-    // Validasi input
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
       res.status(400).json({
         success: false,
@@ -37,17 +36,12 @@ export const sendMessageBlast = async (
       return;
     }
 
-    // Handle backward compatibility: convert old 'channel' to new 'channels' array
     let selectedChannels: string[] = [];
 
     if (channels && Array.isArray(channels)) {
       selectedChannels = channels;
     } else if (channel) {
-      if (channel === "both") {
-        selectedChannels = ["email", "whatsapp"];
-      } else {
-        selectedChannels = [channel];
-      }
+      selectedChannels = channel === "both" ? ["email", "whatsapp"] : [channel];
     } else {
       res.status(400).json({
         success: false,
@@ -57,7 +51,6 @@ export const sendMessageBlast = async (
       return;
     }
 
-    // Validate channels
     const validChannels = ["email", "whatsapp", "sms", "push"];
     const invalidChannels = selectedChannels.filter(
       (ch) => !validChannels.includes(ch)
@@ -68,20 +61,18 @@ export const sendMessageBlast = async (
         success: false,
         message: `Invalid channels: ${invalidChannels.join(
           ", "
-        )}. Valid channels: ${validChannels.join(", ")}`,
+        )}. Valid: ${validChannels.join(", ")}`,
       });
       return;
     }
 
     if (!templateId) {
-      res.status(400).json({
-        success: false,
-        message: "Template ID is required",
-      });
+      res
+        .status(400)
+        .json({ success: false, message: "Template ID is required" });
       return;
     }
 
-    // Get template
     const template = TemplateService.getTemplateById(templateId);
     if (!template) {
       res.status(404).json({
@@ -91,31 +82,8 @@ export const sendMessageBlast = async (
       return;
     }
 
-    // Validate channel compatibility
-    const templateChannels =
-      template.channel === ChannelType.BOTH
-        ? ["email", "whatsapp"]
-        : [template.channel];
-
-    const incompatibleChannels = selectedChannels.filter(
-      (ch) => !templateChannels.includes(ch as ChannelType)
-    );
-
-    if (incompatibleChannels.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: `Template '${
-          template.name
-        }' is only available for channels: ${templateChannels.join(
-          ", "
-        )}. You requested: ${selectedChannels.join(", ")}`,
-      });
-      return;
-    }
-
     const messageJobs: MessageJobData[] = [];
 
-    // Process each recipient
     for (const recipient of recipients) {
       const variables: TemplateVariable = {
         ...globalVariables,
@@ -128,6 +96,9 @@ export const sendMessageBlast = async (
       const rendered = TemplateService.renderTemplate(template, variables);
 
       for (const selectedChannel of selectedChannels) {
+        /** ----------------
+         *  EMAIL CHANNEL
+         * ----------------*/
         if (selectedChannel === "email" && recipient.email) {
           if (!from) {
             res.status(400).json({
@@ -150,28 +121,26 @@ export const sendMessageBlast = async (
           messageJobs.push(emailJob);
         }
 
+        /** ----------------
+         *  WHATSAPP CHANNEL (Qiscus)
+         * ----------------*/
         if (selectedChannel === "whatsapp" && recipient.phone) {
+          const waData = variables as Record<string, any>;
+
           const whatsappJob: WhatsAppJobData = {
             recipient: {
               phone: recipient.phone,
               name: recipient.name,
             },
-            message: rendered.body,
             channel: ChannelType.WHATSAPP,
+            templateName: template.id, // pakai ID yang sama seperti di Qiscus
+            templateData: {
+              headerParams: waData.headerParams || [],
+              bodyParams: waData.bodyParams || [],
+              buttonParams: waData.buttonParams || [],
+            },
           };
           messageJobs.push(whatsappJob);
-        }
-
-        if (selectedChannel === "sms" && recipient.phone) {
-          logger.warn("SMS channel not yet implemented", {
-            recipient: recipient.phone,
-          });
-        }
-
-        if (selectedChannel === "push") {
-          logger.warn("Push notification channel not yet implemented", {
-            recipient: recipient.name,
-          });
         }
       }
     }
@@ -179,22 +148,18 @@ export const sendMessageBlast = async (
     if (messageJobs.length === 0) {
       res.status(400).json({
         success: false,
-        message:
-          "No valid recipients found for the selected channel(s). Make sure recipients have required contact info (email/phone).",
+        message: "No valid recipients found for selected channel(s).",
       });
       return;
     }
 
-    // Add to queue
     const jobIds = await addBulkMessagesToQueue(messageJobs);
 
-    // Log to database - initial queued status
     for (let i = 0; i < messageJobs.length; i++) {
       const job = messageJobs[i];
       const jobId = jobIds[i];
 
-      if ("subject" in job && "from" in job) {
-        // Email job
+      if ("subject" in job) {
         DatabaseService.logMessage({
           job_id: jobId,
           channel: "email",
@@ -205,8 +170,7 @@ export const sendMessageBlast = async (
           subject: job.subject,
           status: "queued",
         });
-      } else if ("message" in job) {
-        // WhatsApp job
+      } else if ("templateName" in job) {
         DatabaseService.logMessage({
           job_id: jobId,
           channel: "whatsapp",
@@ -271,10 +235,10 @@ export const getQueueStats = async (
       },
     });
   } catch (error) {
-    logger.error("Error getting queue stats:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get queue statistics",
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 };

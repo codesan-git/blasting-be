@@ -22,6 +22,7 @@
     "ioredis": "^5.8.2",
     "jq": "^1.7.2",
     "nodemailer": "^7.0.10",
+    "redis": "^5.9.0",
     "winston": "^3.18.3"
   },
   "devDependencies": {
