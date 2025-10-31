@@ -4,151 +4,14 @@ import {
   ChannelType,
   TemplateVariable,
 } from "../types/template.types";
+import { emailTemplates } from "./templates/emailTemplates";
+import { mnsWhatsappTemplates } from "./templates/waTemplates";
 
-// In-memory template storage (bisa diganti dengan database)
 const templates: Map<string, Template> = new Map();
 
-// Pre-defined templates
-const defaultTemplates: Template[] = [
-  {
-    id: "email-welcome-001",
-    name: "Welcome Email",
-    type: TemplateType.WELCOME,
-    channel: ChannelType.EMAIL,
-    subject: "Welcome to {{companyName}}, {{name}}!",
-    body: `
-      <h1>Hello {{name}}! 👋</h1>
-      <p>Welcome to <strong>{{companyName}}</strong>!</p>
-      <p>We're excited to have you on board. Your account has been successfully created.</p>
-      <p>Account Details:</p>
-      <ul>
-        <li>Email: {{email}}</li>
-        <li>Registration Date: {{date}}</li>
-      </ul>
-      <p>If you have any questions, feel free to reach out to us.</p>
-      <p>Best regards,<br>{{companyName}} Team</p>
-    `,
-    variables: ["name", "companyName", "email", "date"],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "email-promo-001",
-    name: "Promotional Email",
-    type: TemplateType.PROMOTION,
-    channel: ChannelType.EMAIL,
-    subject: "🎉 Special Offer: {{discountPercent}}% OFF!",
-    body: `
-      <h1>Exclusive Offer for {{name}}! 🎁</h1>
-      <p>Get <strong>{{discountPercent}}% OFF</strong> on your next purchase!</p>
-      <p>Use code: <strong>{{promoCode}}</strong></p>
-      <p>Valid until: {{expiryDate}}</p>
-      <p>Don't miss out on this amazing deal!</p>
-      <a href="{{shopUrl}}" style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; display: inline-block; border-radius: 4px;">Shop Now</a>
-    `,
-    variables: [
-      "name",
-      "discountPercent",
-      "promoCode",
-      "expiryDate",
-      "shopUrl",
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "wa-welcome-001",
-    name: "WhatsApp Welcome Message",
-    type: TemplateType.WELCOME,
-    channel: ChannelType.WHATSAPP,
-    body: `Halo *{{name}}*! 👋
-
-Selamat datang di *{{companyName}}*! 
-
-Terima kasih telah bergabung dengan kami. Akun Anda telah berhasil dibuat.
-
-📧 Email: {{email}}
-📅 Tanggal Registrasi: {{date}}
-
-Jika ada pertanyaan, silakan hubungi kami kapan saja.
-
-Salam,
-Tim {{companyName}}`,
-    variables: ["name", "companyName", "email", "date"],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "wa-promo-001",
-    name: "WhatsApp Promotional Message",
-    type: TemplateType.PROMOTION,
-    channel: ChannelType.WHATSAPP,
-    body: `🎉 *Penawaran Spesial untuk {{name}}!* 🎁
-
-Dapatkan diskon *{{discountPercent}}%* untuk pembelian Anda!
-
-🎫 Kode Promo: *{{promoCode}}*
-⏰ Berlaku hingga: {{expiryDate}}
-
-Jangan lewatkan kesempatan ini!
-
-🛍️ Belanja sekarang: {{shopUrl}}`,
-    variables: [
-      "name",
-      "discountPercent",
-      "promoCode",
-      "expiryDate",
-      "shopUrl",
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "email-reminder-001",
-    name: "Payment Reminder Email",
-    type: TemplateType.REMINDER,
-    channel: ChannelType.EMAIL,
-    subject: "Payment Reminder - Invoice #{{invoiceNumber}}",
-    body: `
-      <h1>Payment Reminder</h1>
-      <p>Dear {{name}},</p>
-      <p>This is a friendly reminder that payment for Invoice #{{invoiceNumber}} is due.</p>
-      <p><strong>Amount Due:</strong> {{currency}}{{amount}}</p>
-      <p><strong>Due Date:</strong> {{dueDate}}</p>
-      <p>Please make your payment at your earliest convenience.</p>
-      <p>Thank you for your business!</p>
-    `,
-    variables: ["name", "invoiceNumber", "amount", "currency", "dueDate"],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "wa-reminder-001",
-    name: "WhatsApp Payment Reminder",
-    type: TemplateType.REMINDER,
-    channel: ChannelType.WHATSAPP,
-    body: `📋 *Pengingat Pembayaran*
-
-Halo {{name}},
-
-Ini adalah pengingat ramah bahwa pembayaran untuk Invoice #{{invoiceNumber}} akan jatuh tempo.
-
-💰 *Jumlah:* {{currency}}{{amount}}
-📅 *Jatuh Tempo:* {{dueDate}}
-
-Mohon lakukan pembayaran secepatnya.
-
-Terima kasih! 🙏`,
-    variables: ["name", "invoiceNumber", "amount", "currency", "dueDate"],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-// Initialize default templates
-defaultTemplates.forEach((template) => {
-  templates.set(template.id, template);
-});
+// Gabungkan semua template (email + WA)
+const allTemplates = [...emailTemplates, ...mnsWhatsappTemplates];
+allTemplates.forEach((tpl) => templates.set(tpl.id, tpl));
 
 export class TemplateService {
   static getAllTemplates(): Template[] {
@@ -165,6 +28,7 @@ export class TemplateService {
     );
   }
 
+  // ✅ Tambahkan kembali untuk perbaiki template.controller.ts
   static getTemplatesByType(type: TemplateType): Template[] {
     return Array.from(templates.values()).filter((t) => t.type === type);
   }
@@ -185,16 +49,12 @@ export class TemplateService {
     id: string,
     updates: Partial<Template>
   ): Template | null {
-    const template = templates.get(id);
-    if (!template) return null;
+    const existing = templates.get(id);
+    if (!existing) return null;
 
-    const updatedTemplate = {
-      ...template,
-      ...updates,
-      updatedAt: new Date(),
-    };
-    templates.set(id, updatedTemplate);
-    return updatedTemplate;
+    const updated = { ...existing, ...updates, updatedAt: new Date() };
+    templates.set(id, updated);
+    return updated;
   }
 
   static deleteTemplate(id: string): boolean {
@@ -208,7 +68,6 @@ export class TemplateService {
     let renderedSubject = template.subject || "";
     let renderedBody = template.body;
 
-    // Replace all variables in subject and body
     Object.keys(variables).forEach((key) => {
       const value = variables[key];
       const regex = new RegExp(`{{${key}}}`, "g");

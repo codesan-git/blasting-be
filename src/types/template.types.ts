@@ -12,6 +12,7 @@ export enum TemplateType {
   NOTIFICATION = "notification",
   REMINDER = "reminder",
   CUSTOM = "custom",
+  PAYMENT = "payment",
 }
 
 export interface TemplateVariable {
