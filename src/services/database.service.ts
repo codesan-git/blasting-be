@@ -39,6 +39,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_status ON message_logs(status);
   CREATE INDEX IF NOT EXISTS idx_channel ON message_logs(channel);
   CREATE INDEX IF NOT EXISTS idx_recipient_email ON message_logs(recipient_email);
+  CREATE INDEX IF NOT EXISTS idx_message_id ON message_logs(message_id);
   CREATE INDEX IF NOT EXISTS idx_created_at ON message_logs(created_at);
 
   CREATE TABLE IF NOT EXISTS api_logs (
@@ -180,6 +181,39 @@ export class DatabaseService {
       attempts || 1,
       jobId
     );
+  }
+
+  /**
+   * Update message status by message_id (for webhook updates)
+   * This is used when Qiscus sends webhook with message status updates
+   */
+  static updateMessageStatusByMessageId(
+    messageId: string,
+    status: string,
+    errorMessage?: string
+  ): void {
+    const stmt = db.prepare(`
+      UPDATE message_logs 
+      SET status = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE message_id = ?
+    `);
+
+    const result = stmt.run(status, errorMessage || null, messageId);
+
+    if (result.changes === 0) {
+      console.warn(`No message found with message_id: ${messageId}`);
+    }
+  }
+
+  /**
+   * Get message log by message_id
+   */
+  static getMessageByMessageId(messageId: string): MessageLog | null {
+    const stmt = db.prepare(`
+      SELECT * FROM message_logs WHERE message_id = ? LIMIT 1
+    `);
+
+    return stmt.get(messageId) as MessageLog | null;
   }
 
   static getMessageLogs(filters?: {

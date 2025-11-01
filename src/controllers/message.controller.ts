@@ -114,6 +114,12 @@ export const sendMessageBlast = async (
     }
 
     const messageJobs: MessageJobData[] = [];
+    const jobMetadata: Array<{
+      channel: string;
+      recipient: any;
+      templateId: string;
+      templateName: string;
+    }> = [];
 
     // Process each recipient
     for (const recipient of recipients) {
@@ -126,7 +132,6 @@ export const sendMessageBlast = async (
         phone: recipient.phone || "",
       };
 
-      // Log variables for debugging
       logger.debug("Processing recipient with variables", {
         recipient: recipient.name,
         variables,
@@ -142,10 +147,8 @@ export const sendMessageBlast = async (
             return;
           }
 
-          // Render template with variables
           const rendered = TemplateService.renderTemplate(template, variables);
 
-          // Log rendered content for debugging
           logger.debug("Rendered email template", {
             recipient: recipient.email,
             subject: rendered.subject,
@@ -162,13 +165,18 @@ export const sendMessageBlast = async (
             from,
             channel: ChannelType.EMAIL,
           };
+
           messageJobs.push(emailJob);
+          jobMetadata.push({
+            channel: "email",
+            recipient: { email: recipient.email, name: recipient.name },
+            templateId,
+            templateName: template.name,
+          });
         }
 
         if (selectedChannel === "whatsapp" && recipient.phone) {
-          // Check if template has Qiscus config
           if (template.qiscusConfig) {
-            // Build Qiscus components
             const qiscusComponents = TemplateService.buildQiscusComponents(
               template,
               variables
@@ -185,9 +193,15 @@ export const sendMessageBlast = async (
               qiscusTemplateName: template.qiscusConfig.templateName,
               qiscusNamespace: template.qiscusConfig.namespace,
             };
+
             messageJobs.push(whatsappJob);
+            jobMetadata.push({
+              channel: "whatsapp",
+              recipient: { phone: recipient.phone, name: recipient.name },
+              templateId,
+              templateName: template.name,
+            });
           } else {
-            // Regular WhatsApp message (simulated)
             const rendered = TemplateService.renderTemplate(
               template,
               variables
@@ -200,7 +214,14 @@ export const sendMessageBlast = async (
               message: rendered.body,
               channel: ChannelType.WHATSAPP,
             };
+
             messageJobs.push(whatsappJob);
+            jobMetadata.push({
+              channel: "whatsapp",
+              recipient: { phone: recipient.phone, name: recipient.name },
+              templateId,
+              templateName: template.name,
+            });
           }
         }
 
@@ -231,29 +252,31 @@ export const sendMessageBlast = async (
     const jobIds = await addBulkMessagesToQueue(messageJobs);
 
     // Log to database - initial queued status
+    // FIXED: Gunakan job metadata untuk logging yang lebih akurat
     for (let i = 0; i < messageJobs.length; i++) {
       const job = messageJobs[i];
       const jobId = jobIds[i];
+      const metadata = jobMetadata[i];
 
-      if ("subject" in job && "from" in job) {
-        // Email job
+      if (metadata.channel === "email") {
+        const emailJob = job as EmailJobData;
         DatabaseService.logMessage({
           job_id: jobId,
           channel: "email",
-          recipient_email: job.recipient.email,
-          recipient_name: job.recipient.name,
+          recipient_email: emailJob.recipient.email,
+          recipient_name: emailJob.recipient.name,
           template_id: templateId,
           template_name: template.name,
-          subject: job.subject,
+          subject: emailJob.subject,
           status: "queued",
         });
-      } else if ("message" in job) {
-        // WhatsApp job
+      } else if (metadata.channel === "whatsapp") {
+        const waJob = job as WhatsAppJobData;
         DatabaseService.logMessage({
           job_id: jobId,
           channel: "whatsapp",
-          recipient_phone: job.recipient.phone,
-          recipient_name: job.recipient.name,
+          recipient_phone: waJob.recipient.phone,
+          recipient_name: waJob.recipient.name,
           template_id: templateId,
           template_name: template.name,
           status: "queued",

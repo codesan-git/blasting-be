@@ -7,8 +7,10 @@ import { messageWorker } from "./workers/message.worker";
 import { createRedisConnection } from "./config/redis";
 import smtpService from "./services/smtp.service";
 import qiscusService from "./services/qiscus.service";
+import qiscusWebhookService from "./services/qiscus-webhook.service";
 
 const PORT = process.env.PORT || 3000;
+const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 
 // Test Redis connection
 const testRedisConnection = async () => {
@@ -33,6 +35,7 @@ const testSMTPConnection = async () => {
       logger.info("SMTP connection verified successfully", {
         host: status.host,
         user: status.user,
+        important: true,
       });
     } else if (status.configured && !isVerified) {
       logger.warn(
@@ -55,11 +58,47 @@ const checkQiscusConfig = () => {
       baseUrl: status.baseUrl,
       appId: status.appId,
       channelId: status.channelId,
+      important: true,
     });
   } else {
     logger.info(
       "Qiscus WhatsApp not configured. WhatsApp messages will be simulated."
     );
+  }
+};
+
+// Register Qiscus webhook
+const registerQiscusWebhook = async () => {
+  const webhookStatus = qiscusWebhookService.getStatus();
+
+  if (!webhookStatus.configured) {
+    logger.info("Qiscus webhook not configured, skipping registration");
+    return;
+  }
+
+  try {
+    const webhookUrl = `${APP_URL}/webhooks/qiscus`;
+
+    logger.info("Registering Qiscus webhook", {
+      url: webhookUrl,
+      important: true,
+    });
+
+    const result = await qiscusWebhookService.registerWebhook(webhookUrl);
+
+    if (result.success) {
+      logger.info("Qiscus webhook registered successfully", {
+        url: webhookUrl,
+        data: result.data,
+        important: true,
+      });
+    } else {
+      logger.warn("Failed to register Qiscus webhook", {
+        message: result.message,
+      });
+    }
+  } catch (error) {
+    logger.error("Error registering Qiscus webhook:", error);
   }
 };
 
@@ -69,8 +108,8 @@ const startServer = async () => {
     await testSMTPConnection();
     checkQiscusConfig();
 
-    app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
+    app.listen(PORT, async () => {
+      logger.info(`Server running on port ${PORT}`, { important: true });
       logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
       logger.info("Email worker is active and processing jobs");
       logger.info("Message worker is active and processing jobs");
@@ -79,7 +118,7 @@ const startServer = async () => {
       const smtpStatus = smtpService.getStatus();
       const qiscusStatus = qiscusService.getStatus();
 
-      logger.info("=== Service Status ===");
+      logger.info("=== Service Status ===", { important: true });
       logger.info(
         `SMTP: ${smtpStatus.configured ? "CONFIGURED" : "SIMULATION"}`
       );
@@ -88,6 +127,13 @@ const startServer = async () => {
           qiscusStatus.configured ? "CONFIGURED" : "SIMULATION"
         }`
       );
+
+      // Register webhook after server starts
+      await registerQiscusWebhook();
+
+      logger.info(`Webhook URL: ${APP_URL}/webhooks/qiscus`, {
+        important: true,
+      });
     });
   } catch (error) {
     logger.error("Failed to start server:", error);
