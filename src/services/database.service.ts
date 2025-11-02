@@ -15,7 +15,23 @@ const db = new Database(DB_PATH);
 // Enable WAL mode for better concurrent access
 db.pragma("journal_mode = WAL");
 
-// Create tables
+// Helper function to get Jakarta time
+const getJakartaTime = (): string => {
+  return new Date()
+    .toLocaleString("en-US", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    })
+    .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, "$3-$1-$2 $4:$5:$6");
+};
+
+// Create tables with explicit timezone handling
 db.exec(`
   CREATE TABLE IF NOT EXISTS message_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,8 +47,8 @@ db.exec(`
     error_message TEXT,
     message_id TEXT,
     attempts INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_job_id ON message_logs(job_id);
@@ -51,7 +67,7 @@ db.exec(`
     response_status INTEGER,
     response_time_ms INTEGER,
     error_message TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_api_endpoint ON api_logs(endpoint);
@@ -62,7 +78,7 @@ db.exec(`
     level TEXT NOT NULL,
     message TEXT NOT NULL,
     metadata TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_system_level ON system_logs(level);
@@ -136,11 +152,14 @@ interface StatusCounts {
 export class DatabaseService {
   // Message Logs
   static logMessage(data: MessageLog): number {
+    const jakartaTime = getJakartaTime();
+
     const stmt = db.prepare(`
       INSERT INTO message_logs (
         job_id, channel, recipient_email, recipient_phone, recipient_name,
-        template_id, template_name, subject, status, error_message, message_id, attempts
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        template_id, template_name, subject, status, error_message, message_id, attempts,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -155,7 +174,9 @@ export class DatabaseService {
       data.status,
       data.error_message || null,
       data.message_id || null,
-      data.attempts || 1
+      data.attempts || 1,
+      jakartaTime,
+      jakartaTime
     );
 
     return result.lastInsertRowid as number;
@@ -168,9 +189,11 @@ export class DatabaseService {
     messageId?: string,
     attempts?: number
   ): void {
+    const jakartaTime = getJakartaTime();
+
     const stmt = db.prepare(`
       UPDATE message_logs 
-      SET status = ?, error_message = ?, message_id = ?, attempts = ?, updated_at = CURRENT_TIMESTAMP
+      SET status = ?, error_message = ?, message_id = ?, attempts = ?, updated_at = ?
       WHERE job_id = ?
     `);
 
@@ -179,26 +202,33 @@ export class DatabaseService {
       errorMessage || null,
       messageId || null,
       attempts || 1,
+      jakartaTime,
       jobId
     );
   }
 
   /**
    * Update message status by message_id (for webhook updates)
-   * This is used when Qiscus sends webhook with message status updates
    */
   static updateMessageStatusByMessageId(
     messageId: string,
     status: string,
     errorMessage?: string
   ): void {
+    const jakartaTime = getJakartaTime();
+
     const stmt = db.prepare(`
       UPDATE message_logs 
-      SET status = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
+      SET status = ?, error_message = ?, updated_at = ?
       WHERE message_id = ?
     `);
 
-    const result = stmt.run(status, errorMessage || null, messageId);
+    const result = stmt.run(
+      status,
+      errorMessage || null,
+      jakartaTime,
+      messageId
+    );
 
     if (result.changes === 0) {
       console.warn(`No message found with message_id: ${messageId}`);
@@ -278,7 +308,7 @@ export class DatabaseService {
         status,
         COUNT(*) as count
       FROM message_logs
-      WHERE created_at >= datetime('now', '-${days} days')
+      WHERE created_at >= datetime('now', '-${days} days', 'localtime')
       GROUP BY DATE(created_at), channel, status
       ORDER BY date DESC
     `);
@@ -288,10 +318,12 @@ export class DatabaseService {
 
   // API Logs
   static logAPI(data: APILog): number {
+    const jakartaTime = getJakartaTime();
+
     const stmt = db.prepare(`
       INSERT INTO api_logs (
-        endpoint, method, ip_address, request_body, response_status, response_time_ms, error_message
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        endpoint, method, ip_address, request_body, response_status, response_time_ms, error_message, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -301,7 +333,8 @@ export class DatabaseService {
       data.request_body || null,
       data.response_status || null,
       data.response_time_ms || null,
-      data.error_message || null
+      data.error_message || null,
+      jakartaTime
     );
 
     return result.lastInsertRowid as number;
@@ -323,15 +356,18 @@ export class DatabaseService {
     message: string,
     metadata?: Record<string, unknown>
   ): number {
+    const jakartaTime = getJakartaTime();
+
     const stmt = db.prepare(`
-      INSERT INTO system_logs (level, message, metadata)
-      VALUES (?, ?, ?)
+      INSERT INTO system_logs (level, message, metadata, created_at)
+      VALUES (?, ?, ?, ?)
     `);
 
     const result = stmt.run(
       level,
       message,
-      metadata ? JSON.stringify(metadata) : null
+      metadata ? JSON.stringify(metadata) : null,
+      jakartaTime
     );
 
     return result.lastInsertRowid as number;
@@ -359,15 +395,15 @@ export class DatabaseService {
 
   // Cleanup old logs
   static cleanupOldLogs(daysToKeep: number = 30): void {
-    db.prepare(
-      `DELETE FROM message_logs WHERE created_at < datetime('now', '-${daysToKeep} days')`
-    ).run();
-    db.prepare(
-      `DELETE FROM api_logs WHERE created_at < datetime('now', '-${daysToKeep} days')`
-    ).run();
-    db.prepare(
-      `DELETE FROM system_logs WHERE created_at < datetime('now', '-${daysToKeep} days')`
-    ).run();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+    const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+    db.prepare(`DELETE FROM message_logs WHERE created_at < ?`).run(cutoffStr);
+
+    db.prepare(`DELETE FROM api_logs WHERE created_at < ?`).run(cutoffStr);
+
+    db.prepare(`DELETE FROM system_logs WHERE created_at < ?`).run(cutoffStr);
   }
 
   static close(): void {
