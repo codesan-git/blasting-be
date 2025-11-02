@@ -18,3 +18,4 @@ coverage/
 
 data/
 .env.bak
+backups/

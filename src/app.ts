@@ -14,6 +14,7 @@ import {
   templateLimiter,
 } from "./middleware/rateLimiter";
 import DatabaseService from "./services/database.service";
+import backupRoutes from "./routes/backup.routes";
 
 const app: Application = express();
 
@@ -54,6 +55,7 @@ app.use("/api/email", blastLimiter, emailRoutes);
 app.use("/api/messages", blastLimiter, messageRoutes);
 app.use("/api/templates", templateLimiter, templateRoutes);
 app.use("/api/logs", logsRoutes);
+app.use("/api/backup", backupRoutes);
 
 // Dashboard endpoint
 app.get("/api/dashboard", getDashboardStats);
