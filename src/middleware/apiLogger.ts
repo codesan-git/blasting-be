@@ -14,7 +14,7 @@ export const apiLogger = (
   let responseStatus = 200;
 
   // Override send method
-  res.send = function (body: unknown): Response {
+  res.send = function (body: any): Response {
     responseStatus = res.statusCode;
     res.send = originalSend;
     return res.send(body);
@@ -25,18 +25,23 @@ export const apiLogger = (
     const responseTime = Date.now() - startTime;
 
     try {
+      // Safe check for req.body
+      const hasRequestBody =
+        req.body &&
+        typeof req.body === "object" &&
+        Object.keys(req.body).length > 0;
+
       DatabaseService.logAPI({
         endpoint: req.path,
         method: req.method,
         ip_address: req.ip,
-        request_body:
-          Object.keys(req.body).length > 0
-            ? JSON.stringify(req.body)
-            : undefined,
+        request_body: hasRequestBody ? JSON.stringify(req.body) : undefined,
         response_status: responseStatus,
         response_time_ms: responseTime,
       });
     } catch (error) {
+      // Don't log to console to avoid spam
+      // Just silently fail - API logging is not critical
       console.error("Failed to log API request:", error);
     }
   });

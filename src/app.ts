@@ -4,6 +4,7 @@ import emailRoutes from "./routes/email.routes";
 import messageRoutes from "./routes/message.routes";
 import templateRoutes from "./routes/template.routes";
 import logsRoutes from "./routes/logs.routes";
+import webhookRoutes from "./routes/webhook.routes";
 import { getDashboardStats } from "./controllers/dashboard.controller";
 import logger from "./utils/logger";
 import { apiLogger } from "./middleware/apiLogger";
@@ -22,8 +23,13 @@ app.use(express.urlencoded({ extended: true }));
 // Trust proxy - important for rate limiting behind reverse proxy
 app.set("trust proxy", 1);
 
-// API logging middleware
-app.use(apiLogger);
+// API logging middleware (but skip for webhooks)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith("/webhooks")) {
+    return next(); // Skip logging for webhooks
+  }
+  apiLogger(req, res, next);
+});
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -35,7 +41,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Apply general rate limiter to all API routes
+// Apply general rate limiter to all API routes (but not webhooks)
 app.use("/api/", apiLimiter);
 
 // Routes with specific rate limiters
@@ -43,6 +49,9 @@ app.use("/api/email", blastLimiter, emailRoutes);
 app.use("/api/messages", blastLimiter, messageRoutes);
 app.use("/api/templates", templateLimiter, templateRoutes);
 app.use("/api/logs", logsRoutes);
+
+// Webhook routes (NO rate limiting for webhooks)
+app.use("/webhooks", webhookRoutes);
 
 // Dashboard endpoint
 app.get("/api/dashboard", getDashboardStats);
@@ -66,7 +75,25 @@ app.get("/api/smtp/status", (req: Request, res: Response) => {
   });
 });
 
-// Add this to src/app.ts after other routes
+// Qiscus webhook status
+app.get("/api/qiscus/webhook/status", async (req: Request, res: Response) => {
+  const qiscusWebhookService =
+    require("./services/qiscus-webhook.service").default;
+  const status = qiscusWebhookService.getStatus();
+
+  let config = null;
+  if (status.configured) {
+    config = await qiscusWebhookService.getWebhookConfig();
+  }
+
+  res.status(200).json({
+    success: true,
+    webhook: {
+      ...status,
+      currentConfig: config,
+    },
+  });
+});
 
 // Test template rendering endpoint
 app.post("/api/templates/test-render", (req: Request, res: Response) => {
