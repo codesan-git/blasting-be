@@ -15,41 +15,78 @@ export const handleQiscusWebhook = async (
   req: Request,
   res: Response
 ): Promise<void> => {
+  const requestId = `webhook-${Date.now()}-${Math.random()
+    .toString(36)
+    .substr(2, 9)}`;
+
   try {
     const payload = req.body as QiscusWebhookPayload;
 
-    logger.info("Received Qiscus webhook", {
+    // Log webhook receipt with full payload
+    logger.info("=== WEBHOOK RECEIVED ===", {
+      requestId,
       type: payload.type,
+      payload: JSON.stringify(payload),
+      headers: JSON.stringify(req.headers),
+      ip: req.ip,
       important: true,
     });
 
+    // Validate payload structure
+    if (!payload || !payload.type) {
+      logger.error("Invalid webhook payload - missing type", {
+        requestId,
+        body: JSON.stringify(req.body),
+        important: true,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Webhook received but payload invalid",
+      });
+      return;
+    }
+
     // Handle different webhook types with type narrowing
     if (payload.type === "message_status") {
-      await handleMessageStatus(payload.payload);
+      await handleMessageStatus(payload.payload, requestId);
     } else if (payload.type === "incoming_message") {
-      await handleIncomingMessage(payload.payload);
+      await handleIncomingMessage(payload.payload, requestId);
     } else {
-      logger.warn("Unknown webhook type", {
+      logger.warn("Unknown webhook type received", {
+        requestId,
         type: (payload as any).type,
-        payload,
+        payload: JSON.stringify(payload),
+        important: true,
       });
     }
+
+    logger.info("=== WEBHOOK PROCESSED SUCCESSFULLY ===", {
+      requestId,
+      type: payload.type,
+      important: true,
+    });
 
     // Always respond with 200 to acknowledge receipt
     res.status(200).json({
       success: true,
       message: "Webhook received",
+      requestId,
     });
   } catch (error) {
-    logger.error("Error processing webhook", {
+    logger.error("=== WEBHOOK PROCESSING ERROR ===", {
+      requestId,
       error: error instanceof Error ? error.message : "Unknown error",
-      body: req.body,
+      stack: error instanceof Error ? error.stack : undefined,
+      body: JSON.stringify(req.body),
+      important: true,
     });
 
     // Still return 200 to prevent Qiscus from retrying
     res.status(200).json({
       success: true,
       message: "Webhook received with errors",
+      requestId,
     });
   }
 };
@@ -58,20 +95,65 @@ export const handleQiscusWebhook = async (
  * Handle message status updates (sent, delivered, read, failed)
  */
 async function handleMessageStatus(
-  payload: QiscusStatusPayload
+  payload: QiscusStatusPayload,
+  requestId: string
 ): Promise<void> {
+  const startTime = Date.now();
+
   try {
     const { message_id, status, timestamp, from, error: errorMsg } = payload;
 
-    if (!message_id || !status) {
-      logger.warn("Invalid message status payload", { payload });
-      return;
-    }
-
-    logger.info("Processing message status update", {
+    logger.info(">>> Processing message status", {
+      requestId,
       messageId: message_id,
       status,
       from,
+      timestamp,
+      error: errorMsg,
+      rawPayload: JSON.stringify(payload),
+      important: true,
+    });
+
+    // Validate required fields
+    if (!message_id) {
+      logger.error("Message status update missing message_id", {
+        requestId,
+        payload: JSON.stringify(payload),
+        important: true,
+      });
+      return;
+    }
+
+    if (!status) {
+      logger.error("Message status update missing status", {
+        requestId,
+        messageId: message_id,
+        payload: JSON.stringify(payload),
+        important: true,
+      });
+      return;
+    }
+
+    // Check if message exists in database
+    const existingMessage = DatabaseService.getMessageByMessageId(message_id);
+
+    if (!existingMessage) {
+      logger.warn("⚠️ Message not found in database", {
+        requestId,
+        messageId: message_id,
+        status,
+        note: "This message may have been sent before webhook was configured",
+        important: true,
+      });
+      return;
+    }
+
+    logger.info("✓ Message found in database", {
+      requestId,
+      messageId: message_id,
+      currentStatus: existingMessage.status,
+      newStatus: status,
+      recipient: existingMessage.recipient_phone,
       important: true,
     });
 
@@ -85,9 +167,11 @@ async function handleMessageStatus(
           undefined
         );
 
-        logger.info("Message sent successfully", {
+        logger.info("✅ Message status updated to SENT", {
+          requestId,
           messageId: message_id,
           timestamp,
+          recipient: from,
           important: true,
         });
         break;
@@ -100,17 +184,23 @@ async function handleMessageStatus(
           undefined
         );
 
-        logger.info("Message delivered", {
+        logger.info("✅ Message DELIVERED to recipient", {
+          requestId,
           messageId: message_id,
           timestamp,
+          recipient: from,
+          important: true,
         });
         break;
 
       case "read":
         // Message read by recipient (no DB update needed, just log)
-        logger.info("Message read", {
+        logger.info("👁️ Message READ by recipient", {
+          requestId,
           messageId: message_id,
           timestamp,
+          recipient: from,
+          important: true,
         });
         break;
 
@@ -124,26 +214,41 @@ async function handleMessageStatus(
           failureReason
         );
 
-        logger.error("Message delivery failed", {
+        logger.error("❌ Message FAILED", {
+          requestId,
           messageId: message_id,
           error: failureReason,
+          timestamp,
+          recipient: from,
           important: true,
         });
         break;
 
       default:
-        logger.warn("Unknown status type", { status, payload });
+        logger.warn("⚠️ Unknown status type", {
+          requestId,
+          status,
+          messageId: message_id,
+          payload: JSON.stringify(payload),
+          important: true,
+        });
     }
 
-    logger.info("Message status updated successfully", {
+    logger.info(">>> Message status update completed", {
+      requestId,
       messageId: message_id,
       status,
+      processingTime: Date.now() - startTime,
       important: true,
     });
   } catch (error) {
-    logger.error("Error handling message status", {
+    logger.error(">>> Error handling message status", {
+      requestId,
       error: error instanceof Error ? error.message : "Unknown error",
-      payload,
+      stack: error instanceof Error ? error.stack : undefined,
+      payload: JSON.stringify(payload),
+      processingTime: Date.now() - startTime,
+      important: true,
     });
   }
 }
@@ -152,12 +257,14 @@ async function handleMessageStatus(
  * Handle incoming messages (replies from customers)
  */
 async function handleIncomingMessage(
-  payload: QiscusIncomingPayload
+  payload: QiscusIncomingPayload,
+  requestId: string
 ): Promise<void> {
   try {
     const { from, message, timestamp } = payload;
 
-    logger.info("Received incoming message", {
+    logger.info(">>> Received incoming message", {
+      requestId,
       from,
       messageText: message.text,
       messageType: message.type,
@@ -170,12 +277,18 @@ async function handleIncomingMessage(
     // TODO: Create support ticket
     // TODO: Notify admin via email/Slack
 
-    // For now, just log the incoming message
-    // You can extend this based on your requirements
+    logger.info(">>> Incoming message logged", {
+      requestId,
+      from,
+      important: true,
+    });
   } catch (error) {
-    logger.error("Error handling incoming message", {
+    logger.error(">>> Error handling incoming message", {
+      requestId,
       error: error instanceof Error ? error.message : "Unknown error",
-      payload,
+      stack: error instanceof Error ? error.stack : undefined,
+      payload: JSON.stringify(payload),
+      important: true,
     });
   }
 }
@@ -188,20 +301,28 @@ export const testWebhook = async (
   res: Response
 ): Promise<void> => {
   try {
-    logger.info("Test webhook called", {
-      body: req.body,
+    const testId = `test-${Date.now()}`;
+
+    logger.info("=== TEST WEBHOOK CALLED ===", {
+      testId,
+      body: JSON.stringify(req.body),
+      headers: JSON.stringify(req.headers),
+      ip: req.ip,
       important: true,
     });
 
     res.status(200).json({
       success: true,
       message: "Webhook test successful",
+      testId,
       received: req.body,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logger.error("Error in test webhook", {
+    logger.error("=== ERROR IN TEST WEBHOOK ===", {
       error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      important: true,
     });
 
     res.status(500).json({

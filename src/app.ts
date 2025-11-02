@@ -13,6 +13,7 @@ import {
   blastLimiter,
   templateLimiter,
 } from "./middleware/rateLimiter";
+import DatabaseService from "./services/database.service";
 
 const app: Application = express();
 
@@ -41,6 +42,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// IMPORTANT: Webhook routes MUST come BEFORE rate limiter
+// Webhooks should NOT have rate limiting
+app.use("/webhooks", webhookRoutes);
+
 // Apply general rate limiter to all API routes (but not webhooks)
 app.use("/api/", apiLimiter);
 
@@ -49,9 +54,6 @@ app.use("/api/email", blastLimiter, emailRoutes);
 app.use("/api/messages", blastLimiter, messageRoutes);
 app.use("/api/templates", templateLimiter, templateRoutes);
 app.use("/api/logs", logsRoutes);
-
-// Webhook routes (NO rate limiting for webhooks)
-app.use("/webhooks", webhookRoutes);
 
 // Dashboard endpoint
 app.get("/api/dashboard", getDashboardStats);
@@ -145,8 +147,103 @@ app.post("/api/templates/test-render", (req: Request, res: Response) => {
   }
 });
 
+// Debug endpoint - cek webhook logs
+app.get("/api/webhooks/debug", async (req: Request, res: Response) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    // Get recent system logs related to webhooks
+    const logs = DatabaseService.getSystemLogs(
+      undefined,
+      parseInt(limit as string),
+      0
+    );
+
+    // Filter webhook-related logs
+    const webhookLogs = logs.filter(
+      (log) =>
+        log.message.includes("WEBHOOK") ||
+        log.message.includes("webhook") ||
+        log.message.includes("message status") ||
+        log.message.includes("Qiscus")
+    );
+
+    res.status(200).json({
+      success: true,
+      count: webhookLogs.length,
+      logs: webhookLogs,
+    });
+  } catch (error) {
+    logger.error("Error getting webhook debug logs:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get webhook debug logs",
+    });
+  }
+});
+
+// Debug endpoint - cek message by message_id
+app.get(
+  "/api/webhooks/message/:messageId",
+  async (req: Request, res: Response) => {
+    try {
+      const { messageId } = req.params;
+
+      const message = DatabaseService.getMessageByMessageId(messageId);
+
+      if (!message) {
+        res.status(404).json({
+          success: false,
+          message: `Message with ID '${messageId}' not found`,
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error("Error getting message by ID:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get message",
+      });
+    }
+  }
+);
+
+// Debug endpoint - test webhook payload
+app.post("/api/webhooks/test-payload", async (req: Request, res: Response) => {
+  try {
+    logger.info("=== TEST PAYLOAD RECEIVED ===", {
+      body: JSON.stringify(req.body, null, 2),
+      headers: JSON.stringify(req.headers, null, 2),
+      important: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Test payload logged successfully",
+      received: req.body,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error("Error logging test payload:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to log test payload",
+    });
+  }
+});
+
 // 404 handler
 app.use((req: Request, res: Response) => {
+  logger.warn("Route not found", {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+  });
   res.status(404).json({ message: "Route not found" });
 });
 
