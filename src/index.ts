@@ -22,6 +22,7 @@ import { createRedisConnection } from "./config/redis";
 import smtpService from "./services/smtp.service";
 import qiscusService from "./services/qiscus.service";
 import qiscusWebhookService from "./services/qiscus-webhook.service";
+import backupScheduler from "./jobs/backup.job";
 
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
@@ -148,6 +149,21 @@ const startServer = async () => {
       logger.info(`Webhook URL: ${APP_URL}/webhooks/qiscus`, {
         important: true,
       });
+
+      // Start backup scheduler
+      backupScheduler.start();
+
+      logger.info("=== Backup Configuration ===", { important: true });
+      const backupStatus = backupScheduler.getStatus();
+      logger.info(
+        `Backup Scheduler: ${backupStatus.enabled ? "ENABLED" : "DISABLED"}`
+      );
+      if (backupStatus.enabled) {
+        logger.info(
+          `Backup Interval: Every ${backupStatus.intervalHours} hours`
+        );
+        logger.info(`Compression: ${backupStatus.compressed ? "ON" : "OFF"}`);
+      }
     });
   } catch (error) {
     logger.error("Failed to start server:", error);
@@ -158,6 +174,7 @@ const startServer = async () => {
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM received, closing server gracefully");
+  backupScheduler.stop();
   await emailWorker.close();
   await messageWorker.close();
   process.exit(0);
