@@ -1,5 +1,19 @@
 import dotenv from "dotenv";
 dotenv.config();
+
+// Set timezone to Jakarta (WIB - UTC+7)
+process.env.TZ = "Asia/Jakarta";
+
+// Verify timezone on startup
+const jakartaTime = new Date().toLocaleString("id-ID", {
+  timeZone: "Asia/Jakarta",
+  dateStyle: "full",
+  timeStyle: "long",
+});
+console.log("🕐 Server Timezone: Asia/Jakarta (WIB - UTC+7)");
+console.log("🕐 Current Time:", jakartaTime);
+console.log("");
+
 import app from "./app";
 import logger from "./utils/logger";
 import { emailWorker } from "./workers/email.worker";
