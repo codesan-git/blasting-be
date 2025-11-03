@@ -1,3 +1,4 @@
+// src/controllers/template.controller.ts
 import { Request, Response } from "express";
 import { TemplateService } from "../services/template.service";
 import { ChannelType, TemplateType } from "../types/template.types";
@@ -69,17 +70,140 @@ export const getTemplateById = async (
   }
 };
 
+/**
+ * Get template variable requirements
+ * GET /api/templates/:id/requirements
+ */
+export const getTemplateRequirements = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const template = TemplateService.getTemplateById(id);
+
+    if (!template) {
+      res.status(404).json({
+        success: false,
+        message: `Template with ID '${id}' not found`,
+      });
+      return;
+    }
+
+    const requirements = TemplateService.getTemplateRequirements(id);
+
+    res.status(200).json({
+      success: true,
+      templateId: id,
+      templateName: template.name,
+      channels: template.channels,
+      requirements: requirements || [],
+      variableCount: template.variables.length,
+      variables: template.variables,
+    });
+  } catch (error) {
+    logger.error("Error getting template requirements:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get template requirements",
+    });
+  }
+};
+
+/**
+ * Validate variables against template requirements
+ * POST /api/templates/:id/validate
+ * Body: { variables: { name: "John", email: "john@example.com" } }
+ */
+export const validateTemplateVariables = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { variables } = req.body;
+
+    if (!variables || typeof variables !== "object") {
+      res.status(400).json({
+        success: false,
+        message: "Variables object is required",
+      });
+      return;
+    }
+
+    const template = TemplateService.getTemplateById(id);
+
+    if (!template) {
+      res.status(404).json({
+        success: false,
+        message: `Template with ID '${id}' not found`,
+      });
+      return;
+    }
+
+    const validation = TemplateService.validateVariables(id, variables);
+
+    if (validation.valid) {
+      res.status(200).json({
+        success: true,
+        message: "All variables are valid",
+        validation: {
+          valid: true,
+          providedVariables: Object.keys(variables),
+          requiredVariables: template.variables,
+        },
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Variable validation failed",
+        validation: {
+          valid: false,
+          errors: validation.errors,
+          missing: validation.missing,
+          providedVariables: Object.keys(variables),
+          requiredVariables: template.variables,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error("Error validating template variables:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to validate template variables",
+    });
+  }
+};
+
 export const createTemplate = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { id, name, type, channel, subject, body, variables } = req.body;
+    const {
+      id,
+      name,
+      type,
+      channels,
+      subject,
+      body,
+      variables,
+      variableRequirements,
+    } = req.body;
 
-    if (!id || !name || !type || !channel || !body) {
+    if (!id || !name || !type || !channels || !body) {
       res.status(400).json({
         success: false,
-        message: "Missing required fields: id, name, type, channel, body",
+        message: "Missing required fields: id, name, type, channels, body",
+      });
+      return;
+    }
+
+    if (!Array.isArray(channels) || channels.length === 0) {
+      res.status(400).json({
+        success: false,
+        message:
+          'Channels must be a non-empty array. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]',
       });
       return;
     }
@@ -97,10 +221,11 @@ export const createTemplate = async (
       id,
       name,
       type,
-      channel,
+      channels,
       subject,
       body,
       variables: variables || [],
+      variableRequirements: variableRequirements || [],
     });
 
     logger.info("Template created", { templateId: id, name });
