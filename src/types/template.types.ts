@@ -1,9 +1,9 @@
+// src/types/template.types.ts
 export enum ChannelType {
   EMAIL = "email",
   WHATSAPP = "whatsapp",
   SMS = "sms",
   PUSH = "push",
-  BOTH = "both", // Deprecated, kept for backward compatibility
 }
 
 export enum TemplateType {
@@ -17,6 +17,15 @@ export enum TemplateType {
 
 export interface TemplateVariable {
   [key: string]: string | number;
+}
+
+// Variable requirement documentation
+export interface VariableRequirement {
+  name: string;
+  description: string;
+  required: boolean;
+  type: "string" | "number" | "date" | "email" | "phone";
+  example?: string;
 }
 
 // Qiscus WhatsApp Template Component
@@ -45,10 +54,13 @@ export interface Template {
   id: string;
   name: string;
   type: TemplateType;
-  channel: ChannelType;
+  channels: ChannelType[]; // Changed from single channel to array
   subject?: string; // For email
   body: string;
   variables: string[]; // List of variables like ['name', 'date', 'amount']
+
+  // NEW: Variable requirements documentation
+  variableRequirements?: VariableRequirement[];
 
   // Qiscus WhatsApp specific
   qiscusConfig?: QiscusTemplateConfig;
@@ -66,8 +78,7 @@ export interface MessageRecipient {
 
 export interface SendMessageRequest {
   recipients: MessageRecipient[];
-  channels: string[]; // NEW: Array of channels ['email', 'whatsapp', 'sms']
-  channel?: string; // OLD: Deprecated but kept for backward compatibility
+  channels: string[]; // Array of channels ['email', 'whatsapp', 'sms']
   templateId: string;
   globalVariables?: TemplateVariable; // Variables applied to all recipients
   from?: string; // Email sender

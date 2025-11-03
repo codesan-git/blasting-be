@@ -1,3 +1,4 @@
+// src/controllers/message.controller.ts
 import { Request, Response } from "express";
 import { addBulkMessagesToQueue } from "../queues/message.queue";
 import {
@@ -22,7 +23,6 @@ export const sendMessageBlast = async (
     const {
       recipients,
       channels,
-      channel,
       templateId,
       globalVariables,
       from,
@@ -37,18 +37,7 @@ export const sendMessageBlast = async (
       return;
     }
 
-    // Handle backward compatibility
-    let selectedChannels: string[] = [];
-
-    if (channels && Array.isArray(channels)) {
-      selectedChannels = channels;
-    } else if (channel) {
-      if (channel === "both") {
-        selectedChannels = ["email", "whatsapp"];
-      } else {
-        selectedChannels = [channel];
-      }
-    } else {
+    if (!channels || !Array.isArray(channels) || channels.length === 0) {
       res.status(400).json({
         success: false,
         message:
@@ -59,7 +48,7 @@ export const sendMessageBlast = async (
 
     // Validate channels
     const validChannels = ["email", "whatsapp", "sms", "push"];
-    const invalidChannels = selectedChannels.filter(
+    const invalidChannels = channels.filter(
       (ch) => !validChannels.includes(ch)
     );
 
@@ -92,13 +81,8 @@ export const sendMessageBlast = async (
     }
 
     // Validate channel compatibility
-    const templateChannels =
-      template.channel === ChannelType.BOTH
-        ? ["email", "whatsapp"]
-        : [template.channel];
-
-    const incompatibleChannels = selectedChannels.filter(
-      (ch) => !templateChannels.includes(ch as ChannelType)
+    const incompatibleChannels = channels.filter(
+      (ch) => !template.channels.includes(ch as ChannelType)
     );
 
     if (incompatibleChannels.length > 0) {
@@ -106,9 +90,9 @@ export const sendMessageBlast = async (
         success: false,
         message: `Template '${
           template.name
-        }' is only available for channels: ${templateChannels.join(
+        }' is only available for channels: ${template.channels.join(
           ", "
-        )}. You requested: ${selectedChannels.join(", ")}`,
+        )}. You requested: ${channels.join(", ")}`,
       });
       return;
     }
@@ -137,7 +121,7 @@ export const sendMessageBlast = async (
         variables,
       });
 
-      for (const selectedChannel of selectedChannels) {
+      for (const selectedChannel of channels) {
         if (selectedChannel === "email" && recipient.email) {
           if (!from) {
             res.status(400).json({
@@ -252,7 +236,6 @@ export const sendMessageBlast = async (
     const jobIds = await addBulkMessagesToQueue(messageJobs);
 
     // Log to database - initial queued status
-    // FIXED: Gunakan job metadata untuk logging yang lebih akurat
     for (let i = 0; i < messageJobs.length; i++) {
       const job = messageJobs[i];
       const jobId = jobIds[i];
@@ -286,7 +269,7 @@ export const sendMessageBlast = async (
 
     logger.info("Message blast initiated", {
       totalMessages: messageJobs.length,
-      channels: selectedChannels,
+      channels: channels,
       templateId,
       templateName: template.name,
       qiscusEnabled: !!template.qiscusConfig,
@@ -296,10 +279,11 @@ export const sendMessageBlast = async (
       success: true,
       message: "Message blast queued successfully",
       totalMessages: messageJobs.length,
-      channels: selectedChannels,
+      channels: channels,
       template: {
         id: template.id,
         name: template.name,
+        channels: template.channels,
         qiscusEnabled: !!template.qiscusConfig,
       },
       jobIds,

@@ -1,21 +1,23 @@
+// src/services/template.service.ts
 import {
   Template,
   TemplateType,
   ChannelType,
   TemplateVariable,
   QiscusTemplateComponent,
+  VariableRequirement,
 } from "../types/template.types";
 
 // In-memory template storage
 const templates: Map<string, Template> = new Map();
 
-// Pre-defined templates including Qiscus WhatsApp template
+// Pre-defined templates with variable requirements
 const defaultTemplates: Template[] = [
   {
     id: "email-welcome-001",
     name: "Welcome Email",
     type: TemplateType.WELCOME,
-    channel: ChannelType.EMAIL,
+    channels: [ChannelType.EMAIL],
     subject: "Welcome to {{companyName}}, {{name}}!",
     body: `
       <h1>Hello {{name}}! 👋</h1>
@@ -30,6 +32,36 @@ const defaultTemplates: Template[] = [
       <p>Best regards,<br>{{companyName}} Team</p>
     `,
     variables: ["name", "companyName", "email", "date"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap penerima",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "companyName",
+        description: "Nama perusahaan",
+        required: true,
+        type: "string",
+        example: "PT. Maju Jaya",
+      },
+      {
+        name: "email",
+        description: "Email penerima",
+        required: true,
+        type: "email",
+        example: "john@example.com",
+      },
+      {
+        name: "date",
+        description: "Tanggal registrasi",
+        required: true,
+        type: "date",
+        example: "2025-11-03",
+      },
+    ],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -37,8 +69,8 @@ const defaultTemplates: Template[] = [
     id: "invoicing_testing_v1_2",
     name: "Invoice Notification (Multi-Channel)",
     type: TemplateType.INVOICE,
-    channel: ChannelType.BOTH, // Changed to BOTH
-    subject: "Invoice {{invoiceNumber}} - {{period}}", // Added for email
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Invoice {{invoiceNumber}} - {{period}}",
     body: `
       <h1>Invoice Notification</h1>
       <p>Dear {{name}},</p>
@@ -66,6 +98,43 @@ const defaultTemplates: Template[] = [
       <p>Best regards,<br>{{companyName}} Team</p>
     `,
     variables: ["name", "period", "invoiceNumber", "amount", "companyName"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama penerima invoice",
+        required: true,
+        type: "string",
+        example: "Budi Santoso",
+      },
+      {
+        name: "period",
+        description: "Periode invoice (bulan/tahun)",
+        required: true,
+        type: "string",
+        example: "Oktober 2025",
+      },
+      {
+        name: "invoiceNumber",
+        description: "Nomor invoice",
+        required: true,
+        type: "string",
+        example: "INV-2025-001",
+      },
+      {
+        name: "amount",
+        description: "Total nominal invoice",
+        required: true,
+        type: "string",
+        example: "Rp 1.500.000",
+      },
+      {
+        name: "companyName",
+        description: "Nama perusahaan pengirim",
+        required: true,
+        type: "string",
+        example: "PT. Contoh Indonesia",
+      },
+    ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
       templateName: "invoicing_testing_v1_2",
@@ -81,7 +150,7 @@ const defaultTemplates: Template[] = [
     id: "email-invoice-001",
     name: "Invoice Notification Email",
     type: TemplateType.INVOICE,
-    channel: ChannelType.EMAIL,
+    channels: [ChannelType.EMAIL],
     subject: "Invoice {{invoiceNumber}} - {{period}}",
     body: `
       <h1>Invoice Notification</h1>
@@ -110,6 +179,43 @@ const defaultTemplates: Template[] = [
       <p>Best regards,<br>{{companyName}} Team</p>
     `,
     variables: ["name", "invoiceNumber", "period", "amount", "companyName"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama penerima invoice",
+        required: true,
+        type: "string",
+        example: "Budi Santoso",
+      },
+      {
+        name: "invoiceNumber",
+        description: "Nomor invoice",
+        required: true,
+        type: "string",
+        example: "INV-2025-001",
+      },
+      {
+        name: "period",
+        description: "Periode invoice",
+        required: true,
+        type: "string",
+        example: "Oktober 2025",
+      },
+      {
+        name: "amount",
+        description: "Total nominal invoice",
+        required: true,
+        type: "string",
+        example: "Rp 1.500.000",
+      },
+      {
+        name: "companyName",
+        description: "Nama perusahaan",
+        required: true,
+        type: "string",
+        example: "PT. Contoh Indonesia",
+      },
+    ],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -130,13 +236,121 @@ export class TemplateService {
   }
 
   static getTemplatesByChannel(channel: ChannelType): Template[] {
-    return Array.from(templates.values()).filter(
-      (t) => t.channel === channel || t.channel === ChannelType.BOTH
+    return Array.from(templates.values()).filter((t) =>
+      t.channels.includes(channel)
     );
   }
 
   static getTemplatesByType(type: TemplateType): Template[] {
     return Array.from(templates.values()).filter((t) => t.type === type);
+  }
+
+  /**
+   * Get template variable requirements
+   */
+  static getTemplateRequirements(
+    templateId: string
+  ): VariableRequirement[] | null {
+    const template = templates.get(templateId);
+    if (!template) return null;
+
+    return template.variableRequirements || [];
+  }
+
+  /**
+   * Validate variables against template requirements
+   */
+  static validateVariables(
+    templateId: string,
+    variables: TemplateVariable
+  ): { valid: boolean; missing: string[]; errors: string[] } {
+    const template = templates.get(templateId);
+    if (!template) {
+      return {
+        valid: false,
+        missing: [],
+        errors: [`Template '${templateId}' not found`],
+      };
+    }
+
+    const missing: string[] = [];
+    const errors: string[] = [];
+
+    // Check if template has requirements defined
+    if (!template.variableRequirements) {
+      // If no requirements, just check if variables exist
+      const missingVars = template.variables.filter(
+        (varName) => !(varName in variables)
+      );
+
+      return {
+        valid: missingVars.length === 0,
+        missing: missingVars,
+        errors: missingVars.map(
+          (varName) => `Missing required variable: ${varName}`
+        ),
+      };
+    }
+
+    // Validate against requirements
+    template.variableRequirements.forEach((req) => {
+      const value = variables[req.name];
+
+      // Check if required variable is missing
+      if (
+        req.required &&
+        (value === undefined || value === null || value === "")
+      ) {
+        missing.push(req.name);
+        errors.push(
+          `Missing required variable: '${req.name}' (${req.description})`
+        );
+        return;
+      }
+
+      // Skip type validation if variable is not provided and not required
+      if (!req.required && (value === undefined || value === null)) {
+        return;
+      }
+
+      // Type validation
+      switch (req.type) {
+        case "email":
+          if (typeof value === "string" && !value.includes("@")) {
+            errors.push(
+              `Invalid email format for variable '${req.name}': ${value}`
+            );
+          }
+          break;
+        case "phone":
+          if (typeof value === "string" && !/^\+?[\d\s-]+$/.test(value)) {
+            errors.push(
+              `Invalid phone format for variable '${req.name}': ${value}`
+            );
+          }
+          break;
+        case "number":
+          if (typeof value !== "number" && isNaN(Number(value))) {
+            errors.push(
+              `Variable '${req.name}' must be a number, got: ${value}`
+            );
+          }
+          break;
+        case "string":
+          if (typeof value !== "string" && typeof value !== "number") {
+            errors.push(
+              `Variable '${req.name}' must be a string, got: ${typeof value}`
+            );
+          }
+          break;
+      }
+    });
+
+    return {
+      valid: errors.length === 0,
+      missing,
+      errors,
+    };
   }
 
   static createTemplate(
