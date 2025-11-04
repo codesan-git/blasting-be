@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { TemplateService } from "../services/template.service";
 import { ChannelType, TemplateType } from "../types/template.types";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 export const getAllTemplates = async (
   req: Request,
@@ -27,17 +28,10 @@ export const getAllTemplates = async (
       templates = TemplateService.getAllTemplates();
     }
 
-    res.status(200).json({
-      success: true,
-      count: templates.length,
-      templates,
-    });
+    ResponseHelper.success(res, templates);
   } catch (error) {
     logger.error("Error getting templates:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get templates",
-    });
+    ResponseHelper.error(res, "Failed to get templates");
   }
 };
 

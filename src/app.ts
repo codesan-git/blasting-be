@@ -19,6 +19,8 @@ import {
 import { authenticate, requirePermission } from "./middleware/auth.middleware";
 import { Permission } from "./types/auth.types";
 import DatabaseService from "./services/database.service";
+import permissionRoutes from "./routes/permission.routes";
+import ResponseHelper from "./utils/api-response.helper";
 
 const app: Application = express();
 
@@ -56,6 +58,11 @@ app.use("/api/auth", authRoutes);
 
 // Apply general rate limiter to all API routes (except webhooks and auth)
 app.use("/api/", apiLimiter);
+
+app.use(
+  "/api/permissions",
+  permissionRoutes // Already has authenticate & requireRole inside
+);
 
 // Protected routes with authentication and specific permissions
 app.use(
@@ -111,11 +118,7 @@ app.get(
 
 // Health check (no authentication required)
 app.get("/health", (req: Request, res: Response) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
+  ResponseHelper.success(res, "Health check successful");
 });
 
 // SMTP status check endpoint (requires system config permission)
@@ -126,10 +129,7 @@ app.get(
   (req: Request, res: Response) => {
     const smtpService = require("./services/smtp.service").default;
     const status = smtpService.getStatus();
-    res.status(200).json({
-      success: true,
-      smtp: status,
-    });
+    ResponseHelper.success(res, status);
   }
 );
 
@@ -318,13 +318,13 @@ app.use((req: Request, res: Response) => {
     path: req.path,
     ip: req.ip,
   });
-  res.status(404).json({ message: "Route not found" });
+  ResponseHelper.error(res, "Route not found");
 });
 
 // Error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   logger.error("Unhandled error:", err);
-  res.status(500).json({ message: "Internal server error" });
+  ResponseHelper.error(res, "Internal server error");
 });
 
 export default app;

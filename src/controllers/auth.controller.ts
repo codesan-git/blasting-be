@@ -10,6 +10,7 @@ import {
   getUserPermissions,
 } from "../types/auth.types";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 /**
  * Login endpoint
@@ -20,17 +21,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password }: LoginRequest = req.body;
 
     if (!email || !password) {
-      res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
+      ResponseHelper.error(res, "Email and password are required");
       return;
     }
 
     const result = await authService.login(email, password);
 
     if (!result.success) {
-      res.status(401).json(result);
+      ResponseHelper.error(res, result.message);
       return;
     }
 
@@ -43,16 +41,18 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       important: true,
     });
 
-    res.status(200).json(result);
+    // res.status(200).json(result);
+    ResponseHelper.success(res, result);
   } catch (error) {
     logger.error("Login error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Login failed due to server error",
-    });
+    // res.status(500).json({
+    //   success: false,
+    //   message: "Login failed due to server error",
+    // });
+    ResponseHelper.error(res, "Login failed due to server error");
   }
 };
 

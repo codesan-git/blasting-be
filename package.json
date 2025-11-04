@@ -12,7 +12,13 @@
     "backup": "ts-node scripts/manual-backup.ts",
     "setup-auth": "ts-node scripts/setup-auth.ts"
   },
-  "keywords": [],
+  "keywords": [
+    "email",
+    "blast",
+    "authentication",
+    "jwt",
+    "permissions"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {

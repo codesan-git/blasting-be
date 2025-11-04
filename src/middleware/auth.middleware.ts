@@ -1,6 +1,7 @@
-// src/middleware/auth.middleware.ts
+// src/middleware/auth.middleware.ts - UPDATED WITH DYNAMIC PERMISSIONS
 import { Request, Response, NextFunction } from "express";
 import authService from "../services/auth.service";
+import DatabaseService from "../services/database.service";
 import { JWTPayload, UserRole, Permission } from "../types/auth.types";
 import logger from "../utils/logger";
 
@@ -112,7 +113,7 @@ export const requireRole = (roles: UserRole | UserRole[]) => {
 };
 
 /**
- * Middleware to check if user has required permission(s)
+ * Middleware to check if user has required permission(s) - DYNAMIC from DB
  * Usage: requirePermission(Permission.EMAIL_SEND)
  * Usage: requirePermission([Permission.EMAIL_SEND, Permission.WHATSAPP_SEND])
  */
@@ -131,18 +132,26 @@ export const requirePermission = (permissions: Permission | Permission[]) => {
       : [permissions];
     const userRoles = req.user.roles;
 
-    // Import permission helpers
-    const { hasAllPermissions } = require("../types/auth.types");
+    // 🔄 GET PERMISSIONS DYNAMICALLY FROM DATABASE
+    const userPermissions = DatabaseService.getRolesPermissions(userRoles);
 
     // Check if user has all required permissions
-    const hasPermissions = hasAllPermissions(userRoles, requiredPermissions);
+    const hasAllPermissions = requiredPermissions.every((permission) =>
+      userPermissions.includes(permission)
+    );
 
-    if (!hasPermissions) {
+    if (!hasAllPermissions) {
+      const missingPermissions = requiredPermissions.filter(
+        (permission) => !userPermissions.includes(permission)
+      );
+
       logger.warn("Access denied - insufficient permissions", {
         userId: req.user.userId,
         email: req.user.email,
         userRoles: userRoles,
+        userPermissions: userPermissions,
         requiredPermissions: requiredPermissions,
+        missingPermissions: missingPermissions,
         endpoint: req.path,
       });
 
@@ -150,6 +159,7 @@ export const requirePermission = (permissions: Permission | Permission[]) => {
         success: false,
         message: "Access denied. You don't have the required permissions.",
         requiredPermissions: requiredPermissions,
+        missingPermissions: missingPermissions,
       });
       return;
     }
@@ -159,7 +169,7 @@ export const requirePermission = (permissions: Permission | Permission[]) => {
 };
 
 /**
- * Middleware to check if user has ANY of the required permissions
+ * Middleware to check if user has ANY of the required permissions - DYNAMIC from DB
  * Usage: requireAnyPermission([Permission.EMAIL_SEND, Permission.WHATSAPP_SEND])
  */
 export const requireAnyPermission = (permissions: Permission[]) => {
@@ -174,17 +184,20 @@ export const requireAnyPermission = (permissions: Permission[]) => {
 
     const userRoles = req.user.roles;
 
-    // Import permission helpers
-    const { hasAnyPermission } = require("../types/auth.types");
+    // 🔄 GET PERMISSIONS DYNAMICALLY FROM DATABASE
+    const userPermissions = DatabaseService.getRolesPermissions(userRoles);
 
     // Check if user has any of the required permissions
-    const hasPermissions = hasAnyPermission(userRoles, permissions);
+    const hasAnyPermission = permissions.some((permission) =>
+      userPermissions.includes(permission)
+    );
 
-    if (!hasPermissions) {
+    if (!hasAnyPermission) {
       logger.warn("Access denied - no matching permissions", {
         userId: req.user.userId,
         email: req.user.email,
         userRoles: userRoles,
+        userPermissions: userPermissions,
         requiredPermissions: permissions,
         endpoint: req.path,
       });
@@ -218,8 +231,7 @@ export const requireActive = (
     return;
   }
 
-  // In JWT, we don't store is_active, so we need to check from database
-  const DatabaseService = require("../services/database.service").default;
+  // Check from database
   const user = DatabaseService.getUserById(req.user.userId);
 
   if (!user || !user.is_active) {
@@ -261,7 +273,6 @@ export const optionalAuth = (
     }
 
     next();
-    // oxlint-disable-next-line no-unused-vars
   } catch (error) {
     // Continue without authentication
     next();

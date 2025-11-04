@@ -181,6 +181,177 @@ interface StatusCounts {
 
 export class DatabaseService {
   /**
+   * Get all permissions for a role
+   */
+  static getRolePermissions(role: string): string[] {
+    const stmt = db.prepare(`
+    SELECT permission FROM role_permissions 
+    WHERE role = ?
+    ORDER BY permission
+  `);
+
+    const rows = stmt.all(role) as { permission: string }[];
+    return rows.map((row) => row.permission);
+  }
+
+  /**
+   * Get permissions for multiple roles (combined)
+   */
+  static getRolesPermissions(roles: string[]): string[] {
+    if (roles.length === 0) return [];
+
+    const placeholders = roles.map(() => "?").join(",");
+    const stmt = db.prepare(`
+    SELECT DISTINCT permission FROM role_permissions 
+    WHERE role IN (${placeholders})
+    ORDER BY permission
+  `);
+
+    const rows = stmt.all(...roles) as { permission: string }[];
+    return rows.map((row) => row.permission);
+  }
+
+  /**
+   * Add permission to role
+   */
+  static addRolePermission(
+    role: string,
+    permission: string,
+    createdBy?: string
+  ): boolean {
+    const jakartaTime = getJakartaTime();
+
+    const stmt = db.prepare(`
+    INSERT OR IGNORE INTO role_permissions (role, permission, created_at, created_by)
+    VALUES (?, ?, ?, ?)
+  `);
+
+    const result = stmt.run(role, permission, jakartaTime, createdBy || null);
+    return result.changes > 0;
+  }
+
+  /**
+   * Remove permission from role
+   */
+  static removeRolePermission(role: string, permission: string): boolean {
+    const stmt = db.prepare(`
+    DELETE FROM role_permissions 
+    WHERE role = ? AND permission = ?
+  `);
+
+    const result = stmt.run(role, permission);
+    return result.changes > 0;
+  }
+
+  /**
+   * Set all permissions for a role (replace existing)
+   */
+  static setRolePermissions(
+    role: string,
+    permissions: string[],
+    createdBy?: string
+  ): boolean {
+    try {
+      const jakartaTime = getJakartaTime();
+
+      // Delete existing permissions for role
+      db.prepare(`DELETE FROM role_permissions WHERE role = ?`).run(role);
+
+      // Insert new permissions
+      const stmt = db.prepare(`
+      INSERT INTO role_permissions (role, permission, created_at, created_by)
+      VALUES (?, ?, ?, ?)
+    `);
+
+      permissions.forEach((permission) => {
+        stmt.run(role, permission, jakartaTime, createdBy || null);
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error setting role permissions:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all roles with their permissions
+   */
+  static getAllRolePermissions(): Record<string, string[]> {
+    const stmt = db.prepare(`
+    SELECT role, permission FROM role_permissions 
+    ORDER BY role, permission
+  `);
+
+    const rows = stmt.all() as { role: string; permission: string }[];
+
+    const result: Record<string, string[]> = {};
+
+    rows.forEach(({ role, permission }) => {
+      if (!result[role]) {
+        result[role] = [];
+      }
+      result[role].push(permission);
+    });
+
+    return result;
+  }
+
+  /**
+   * Check if role has permission
+   */
+  static roleHasPermission(role: string, permission: string): boolean {
+    const stmt = db.prepare(`
+    SELECT COUNT(*) as count FROM role_permissions 
+    WHERE role = ? AND permission = ?
+  `);
+
+    const result = stmt.get(role, permission) as { count: number };
+    return result.count > 0;
+  }
+
+  /**
+   * Check if user (with multiple roles) has permission
+   */
+  static userHasPermission(roles: string[], permission: string): boolean {
+    if (roles.length === 0) return false;
+
+    const placeholders = roles.map(() => "?").join(",");
+    const stmt = db.prepare(`
+    SELECT COUNT(*) as count FROM role_permissions 
+    WHERE role IN (${placeholders}) AND permission = ?
+  `);
+
+    const result = stmt.get(...roles, permission) as { count: number };
+    return result.count > 0;
+  }
+
+  /**
+   * Get permission usage stats
+   */
+  static getPermissionStats(): Array<{
+    permission: string;
+    roleCount: number;
+    roles: string;
+  }> {
+    const stmt = db.prepare(`
+    SELECT 
+      permission,
+      COUNT(*) as roleCount,
+      GROUP_CONCAT(role) as roles
+    FROM role_permissions
+    GROUP BY permission
+    ORDER BY roleCount DESC, permission
+  `);
+
+    return stmt.all() as Array<{
+      permission: string;
+      roleCount: number;
+      roles: string;
+    }>;
+  }
+
+  /**
    * Count super admin users
    */
   static countSuperAdmins(): number {
