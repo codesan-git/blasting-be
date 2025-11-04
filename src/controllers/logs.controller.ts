@@ -7,6 +7,7 @@ import DatabaseService, {
   MessageStatsByDateRow,
 } from "../services/database.service";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 // Types for formatted stats
 interface StatusCounts {
@@ -59,17 +60,14 @@ export const getMessageLogs = async (
       offset: parseQueryNumber(offset, 0),
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       count: logs.length,
       logs,
     });
   } catch (error) {
     logger.error("Error getting message logs:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get message logs",
-    });
+    ResponseHelper.error(res, "Failed to get message logs");
   }
 };
 
@@ -100,16 +98,13 @@ export const getMessageStats = async (
       }
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       stats: formatted,
     });
   } catch (error) {
     logger.error("Error getting message stats:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get message statistics",
-    });
+    ResponseHelper.error(res, "Failed to get message statistics");
   }
 };
 
@@ -123,16 +118,13 @@ export const getMessageStatsByDate = async (
     const stats: MessageStatsByDateRow[] =
       DatabaseService.getMessageStatsByDate(parseQueryNumber(days, 7));
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       stats,
     });
   } catch (error) {
     logger.error("Error getting message stats by date:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get message statistics by date",
-    });
+    ResponseHelper.error(res, "Failed to get message statistics by date");
   }
 };
 
@@ -148,17 +140,14 @@ export const getAPILogs = async (
       parseQueryNumber(offset, 0)
     );
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       count: logs.length,
       logs,
     });
   } catch (error) {
     logger.error("Error getting API logs:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get API logs",
-    });
+    ResponseHelper.error(res, "Failed to get API logs");
   }
 };
 
@@ -175,17 +164,14 @@ export const getSystemLogs = async (
       parseQueryNumber(offset, 0)
     );
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       count: logs.length,
       logs,
     });
   } catch (error) {
     logger.error("Error getting system logs:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get system logs",
-    });
+    ResponseHelper.error(res, "Failed to get system logs");
   }
 };
 
@@ -199,15 +185,12 @@ export const cleanupLogs = async (
     const daysToKeep = parseQueryNumber(days, 30);
     DatabaseService.cleanupOldLogs(daysToKeep);
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       message: `Logs older than ${daysToKeep} days have been cleaned up`,
     });
   } catch (error) {
     logger.error("Error cleaning up logs:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to cleanup logs",
-    });
+    ResponseHelper.error(res, "Failed to cleanup logs");
   }
 };

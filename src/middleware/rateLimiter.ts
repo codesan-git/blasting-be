@@ -1,5 +1,6 @@
 import rateLimit from "express-rate-limit";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 // General API rate limiter
 export const apiLimiter = rateLimit({
@@ -17,11 +18,12 @@ export const apiLimiter = rateLimit({
       path: req.path,
       method: req.method,
     });
-    res.status(429).json({
-      success: false,
-      message: "Too many requests, please try again later.",
-      retryAfter: res.getHeader("RateLimit-Reset"),
-    });
+    ResponseHelper.error(
+      res,
+      `Too many requests, please try again later. ${res.getHeader(
+        "RateLimit-Reset"
+      )}`
+    );
   },
 });
 
@@ -42,11 +44,12 @@ export const blastLimiter = rateLimit({
       path: req.path,
       body: req.body,
     });
-    res.status(429).json({
-      success: false,
-      message: "Too many blast requests. Maximum 10 requests per minute.",
-      retryAfter: res.getHeader("RateLimit-Reset"),
-    });
+    ResponseHelper.error(
+      res,
+      `Too many blast requests. Maximum 10 requests per minute. ${res.getHeader(
+        "RateLimit-Reset"
+      )}`
+    );
   },
 });
 

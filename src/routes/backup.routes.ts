@@ -3,6 +3,7 @@ import { Router, Request, Response } from "express";
 import backupService from "../services/backup.service";
 import backupScheduler from "../jobs/backup.job";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 const router = Router();
 
@@ -25,29 +26,21 @@ router.post("/create", async (req: Request, res: Response) => {
       : backupService.backup();
 
     if (result.success) {
-      res.status(200).json({
+      ResponseHelper.success(res, {
         success: true,
         message: "Backup created successfully",
         backupPath: result.backupPath,
         stats: backupService.getStats(),
       });
     } else {
-      res.status(500).json({
-        success: false,
-        message: "Failed to create backup",
-        error: result.error,
-      });
+      ResponseHelper.error(res, `Failed to create backup: ${result.error}`);
     }
   } catch (error) {
     logger.error("Error creating backup", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to create backup",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    ResponseHelper.error(res, `Failed to create backup: ${error}`);
   }
 });
 
@@ -60,7 +53,7 @@ router.get("/list", (req: Request, res: Response) => {
     const backups = backupService.listBackups();
     const stats = backupService.getStats();
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       count: backups.length,
       stats,
@@ -71,10 +64,7 @@ router.get("/list", (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to list backups",
-    });
+    ResponseHelper.error(res, `Failed to list backups: ${error}`);
   }
 });
 
@@ -86,15 +76,12 @@ router.get("/stats", (req: Request, res: Response) => {
   try {
     const stats = backupService.getStats();
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       stats,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to get backup statistics",
-    });
+    ResponseHelper.error(res, `Failed to get backup statistics: ${error}`);
   }
 });
 
@@ -108,10 +95,7 @@ router.post("/restore", async (req: Request, res: Response) => {
     const { backupFilename } = req.body;
 
     if (!backupFilename) {
-      res.status(400).json({
-        success: false,
-        message: "backupFilename is required",
-      });
+      ResponseHelper.error(res, "backupFilename is required");
       return;
     }
 
@@ -129,28 +113,20 @@ router.post("/restore", async (req: Request, res: Response) => {
         important: true,
       });
 
-      res.status(200).json({
+      ResponseHelper.success(res, {
         success: true,
         message:
           "Database restored successfully. Please restart the application.",
       });
     } else {
-      res.status(500).json({
-        success: false,
-        message: "Failed to restore database",
-        error: result.error,
-      });
+      ResponseHelper.error(res, `Failed to restore database: ${result.error}`);
     }
   } catch (error) {
     logger.error("Error restoring database", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to restore database",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    ResponseHelper.error(res, `Failed to restore database: ${error}`);
   }
 });
 
@@ -161,7 +137,7 @@ router.post("/restore", async (req: Request, res: Response) => {
 router.get("/scheduler/status", (req: Request, res: Response) => {
   const status = backupScheduler.getStatus();
 
-  res.status(200).json({
+  ResponseHelper.success(res, {
     success: true,
     scheduler: status,
   });
@@ -178,10 +154,7 @@ router.get("/download/:filename", (req: Request, res: Response) => {
     const backup = backups.find((b) => b.filename === filename);
 
     if (!backup) {
-      res.status(404).json({
-        success: false,
-        message: "Backup file not found",
-      });
+      ResponseHelper.error(res, "Backup file not found");
       return;
     }
 
@@ -198,10 +171,7 @@ router.get("/download/:filename", (req: Request, res: Response) => {
           filename,
           error: err.message,
         });
-        res.status(500).json({
-          success: false,
-          message: "Failed to download backup",
-        });
+        ResponseHelper.error(res, "Failed to download backup");
       }
     });
   } catch (error) {
@@ -209,10 +179,7 @@ router.get("/download/:filename", (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to download backup",
-    });
+    ResponseHelper.error(res, `Failed to download backup: ${error}`);
   }
 });
 

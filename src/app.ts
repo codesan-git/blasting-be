@@ -1,10 +1,13 @@
-// src/app.ts
+// src/app.ts - UPDATED VERSION WITH AUTHENTICATION
 import express, { Application, Request, Response, NextFunction } from "express";
 import emailRoutes from "./routes/email.routes";
 import messageRoutes from "./routes/message.routes";
 import templateRoutes from "./routes/template.routes";
 import logsRoutes from "./routes/logs.routes";
 import webhookRoutes from "./routes/webhook.routes";
+import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
+import backupRoutes from "./routes/backup.routes";
 import { getDashboardStats } from "./controllers/dashboard.controller";
 import logger from "./utils/logger";
 import { apiLogger } from "./middleware/apiLogger";
@@ -13,8 +16,11 @@ import {
   blastLimiter,
   templateLimiter,
 } from "./middleware/rateLimiter";
+import { authenticate, requirePermission } from "./middleware/auth.middleware";
+import { Permission } from "./types/auth.types";
 import DatabaseService from "./services/database.service";
-import backupRoutes from "./routes/backup.routes";
+import permissionRoutes from "./routes/permission.routes";
+import ResponseHelper from "./utils/api-response.helper";
 
 const app: Application = express();
 
@@ -25,10 +31,10 @@ app.use(express.urlencoded({ extended: true }));
 // Trust proxy - important for rate limiting behind reverse proxy
 app.set("trust proxy", 1);
 
-// API logging middleware (but skip for webhooks)
+// API logging middleware (but skip for webhooks and auth)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.path.startsWith("/webhooks")) {
-    return next(); // Skip logging for webhooks
+  if (req.path.startsWith("/webhooks") || req.path.startsWith("/api/auth")) {
+    return next(); // Skip logging for webhooks and auth
   }
   apiLogger(req, res, next);
 });
@@ -43,150 +49,211 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// IMPORTANT: Webhook routes MUST come BEFORE rate limiter
-// Webhooks should NOT have rate limiting
+// IMPORTANT: Webhook routes MUST come BEFORE authentication & rate limiter
+// Webhooks should NOT have authentication or rate limiting
 app.use("/webhooks", webhookRoutes);
 
-// Apply general rate limiter to all API routes (but not webhooks)
+// Authentication routes (public - no auth required)
+app.use("/api/auth", authRoutes);
+
+// Apply general rate limiter to all API routes (except webhooks and auth)
 app.use("/api/", apiLimiter);
 
-// Routes with specific rate limiters
-app.use("/api/email", blastLimiter, emailRoutes);
-app.use("/api/messages", blastLimiter, messageRoutes);
-app.use("/api/templates", templateLimiter, templateRoutes);
-app.use("/api/logs", logsRoutes);
-app.use("/api/backup", backupRoutes);
+app.use(
+  "/api/permissions",
+  permissionRoutes // Already has authenticate & requireRole inside
+);
 
-// Dashboard endpoint
-app.get("/api/dashboard", getDashboardStats);
+// Protected routes with authentication and specific permissions
+app.use(
+  "/api/email",
+  authenticate,
+  requirePermission(Permission.EMAIL_SEND),
+  blastLimiter,
+  emailRoutes
+);
 
-// Health check (no rate limit)
+app.use(
+  "/api/messages",
+  authenticate,
+  requirePermission([Permission.EMAIL_SEND, Permission.WHATSAPP_SEND]),
+  blastLimiter,
+  messageRoutes
+);
+
+app.use(
+  "/api/templates",
+  authenticate,
+  requirePermission(Permission.TEMPLATE_READ),
+  templateLimiter,
+  templateRoutes
+);
+
+app.use(
+  "/api/logs",
+  authenticate,
+  requirePermission(Permission.LOGS_READ),
+  logsRoutes
+);
+
+app.use(
+  "/api/backup",
+  authenticate,
+  requirePermission(Permission.BACKUP_READ),
+  backupRoutes
+);
+
+app.use(
+  "/api/users",
+  userRoutes // Already has authenticate middleware inside
+);
+
+// Dashboard endpoint (requires dashboard read permission)
+app.get(
+  "/api/dashboard",
+  authenticate,
+  requirePermission(Permission.DASHBOARD_READ),
+  getDashboardStats
+);
+
+// Health check (no authentication required)
 app.get("/health", (req: Request, res: Response) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
+  ResponseHelper.success(res, "Health check successful");
 });
 
-// SMTP status check endpoint
-app.get("/api/smtp/status", (req: Request, res: Response) => {
-  const smtpService = require("./services/smtp.service").default;
-  const status = smtpService.getStatus();
-  res.status(200).json({
-    success: true,
-    smtp: status,
-  });
-});
-
-// Qiscus webhook status
-app.get("/api/qiscus/webhook/status", async (req: Request, res: Response) => {
-  const qiscusWebhookService =
-    require("./services/qiscus-webhook.service").default;
-  const status = qiscusWebhookService.getStatus();
-
-  let config = null;
-  if (status.configured) {
-    config = await qiscusWebhookService.getWebhookConfig();
+// SMTP status check endpoint (requires system config permission)
+app.get(
+  "/api/smtp/status",
+  authenticate,
+  requirePermission(Permission.SYSTEM_CONFIG),
+  (req: Request, res: Response) => {
+    const smtpService = require("./services/smtp.service").default;
+    const status = smtpService.getStatus();
+    ResponseHelper.success(res, status);
   }
+);
 
-  res.status(200).json({
-    success: true,
-    webhook: {
-      ...status,
-      currentConfig: config,
-    },
-  });
-});
+// Qiscus webhook status (requires system config permission)
+app.get(
+  "/api/qiscus/webhook/status",
+  authenticate,
+  requirePermission(Permission.SYSTEM_CONFIG),
+  async (req: Request, res: Response) => {
+    const qiscusWebhookService =
+      require("./services/qiscus-webhook.service").default;
+    const status = qiscusWebhookService.getStatus();
 
-// Test template rendering endpoint
-app.post("/api/templates/test-render", (req: Request, res: Response) => {
-  try {
-    const { templateId, variables } = req.body;
-
-    if (!templateId) {
-      res.status(400).json({
-        success: false,
-        message: "templateId is required",
-      });
-      return;
+    let config = null;
+    if (status.configured) {
+      config = await qiscusWebhookService.getWebhookConfig();
     }
 
-    const { TemplateService } = require("./services/template.service");
-    const template = TemplateService.getTemplateById(templateId);
+    const data = {
+      webhook: {
+        ...status,
+        currentConfig: config,
+      },
+    };
+    ResponseHelper.success(
+      res,
+      data,
+      "Qiscus webhook status retrieved successfully"
+    );
+  }
+);
 
-    if (!template) {
-      res.status(404).json({
-        success: false,
-        message: `Template '${templateId}' not found`,
-      });
-      return;
+// Test template rendering endpoint (requires template read permission)
+app.post(
+  "/api/templates/test-render",
+  authenticate,
+  requirePermission(Permission.TEMPLATE_READ),
+  (req: Request, res: Response) => {
+    try {
+      const { templateId, variables } = req.body;
+
+      if (!templateId) {
+        ResponseHelper.error(res, "templateId is required");
+        return;
+      }
+
+      const { TemplateService } = require("./services/template.service");
+      const template = TemplateService.getTemplateById(templateId);
+
+      if (!template) {
+        ResponseHelper.error(res, `Template '${templateId}' not found`);
+        return;
+      }
+
+      const rendered = TemplateService.renderTemplate(
+        template,
+        variables || {}
+      );
+
+      const data = {
+        template: {
+          id: template.id,
+          name: template.name,
+          channel: template.channel,
+        },
+        variables: variables || {},
+        rendered: {
+          subject: rendered.subject,
+          body: rendered.body,
+          bodyLength: rendered.body.length,
+        },
+      };
+      ResponseHelper.success(res, data, "Template rendered successfully");
+    } catch (error) {
+      logger.error("Error testing template:", error);
+      ResponseHelper.error(res, "Failed to test template");
     }
-
-    const rendered = TemplateService.renderTemplate(template, variables || {});
-
-    res.status(200).json({
-      success: true,
-      template: {
-        id: template.id,
-        name: template.name,
-        channel: template.channel,
-      },
-      variables: variables || {},
-      rendered: {
-        subject: rendered.subject,
-        body: rendered.body,
-        bodyLength: rendered.body.length,
-      },
-    });
-  } catch (error) {
-    logger.error("Error testing template:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to test template",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
   }
-});
+);
 
-// Debug endpoint - cek webhook logs
-app.get("/api/webhooks/debug", async (req: Request, res: Response) => {
-  try {
-    const { limit = 50 } = req.query;
+// Debug endpoint - cek webhook logs (requires system logs permission)
+app.get(
+  "/api/webhooks/debug",
+  authenticate,
+  requirePermission(Permission.SYSTEM_LOGS),
+  async (req: Request, res: Response) => {
+    try {
+      const { limit = 50 } = req.query;
 
-    // Get recent system logs related to webhooks
-    const logs = DatabaseService.getSystemLogs(
-      undefined,
-      parseInt(limit as string),
-      0
-    );
+      const logs = DatabaseService.getSystemLogs(
+        undefined,
+        parseInt(limit as string),
+        0
+      );
 
-    // Filter webhook-related logs
-    const webhookLogs = logs.filter(
-      (log) =>
-        log.message.includes("WEBHOOK") ||
-        log.message.includes("webhook") ||
-        log.message.includes("message status") ||
-        log.message.includes("Qiscus")
-    );
+      const webhookLogs = logs.filter(
+        (log) =>
+          log.message.includes("WEBHOOK") ||
+          log.message.includes("webhook") ||
+          log.message.includes("message status") ||
+          log.message.includes("Qiscus")
+      );
 
-    res.status(200).json({
-      success: true,
-      count: webhookLogs.length,
-      logs: webhookLogs,
-    });
-  } catch (error) {
-    logger.error("Error getting webhook debug logs:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get webhook debug logs",
-    });
+      const data = {
+        count: webhookLogs.length,
+        logs: webhookLogs,
+      };
+      ResponseHelper.success(
+        res,
+        data,
+        "Webhook debug logs retrieved successfully"
+      );
+    } catch (error) {
+      logger.error("Error getting webhook debug logs:", error);
+      ResponseHelper.error(res, "Failed to get webhook debug logs");
+    }
   }
-});
+);
 
-// Debug endpoint - cek message by message_id
+// Debug endpoint - cek message by message_id (requires logs read permission)
 app.get(
   "/api/webhooks/message/:messageId",
+  authenticate,
+  requirePermission(Permission.LOGS_READ),
   async (req: Request, res: Response) => {
     try {
       const { messageId } = req.params;
@@ -194,28 +261,22 @@ app.get(
       const message = DatabaseService.getMessageByMessageId(messageId);
 
       if (!message) {
-        res.status(404).json({
-          success: false,
-          message: `Message with ID '${messageId}' not found`,
-        });
+        ResponseHelper.error(res, `Message with ID '${messageId}' not found`);
         return;
       }
 
-      res.status(200).json({
-        success: true,
+      const data = {
         message,
-      });
+      };
+      ResponseHelper.success(res, data, "Message retrieved successfully");
     } catch (error) {
       logger.error("Error getting message by ID:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get message",
-      });
+      ResponseHelper.error(res, "Failed to get message");
     }
   }
 );
 
-// Debug endpoint - test webhook payload
+// Debug endpoint - test webhook payload (no auth - for external testing)
 app.post("/api/webhooks/test-payload", async (req: Request, res: Response) => {
   try {
     logger.info("=== TEST PAYLOAD RECEIVED ===", {
@@ -224,18 +285,15 @@ app.post("/api/webhooks/test-payload", async (req: Request, res: Response) => {
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
+    const data = {
       message: "Test payload logged successfully",
       received: req.body,
       timestamp: new Date().toISOString(),
-    });
+    };
+    ResponseHelper.success(res, data, "Test payload logged successfully");
   } catch (error) {
     logger.error("Error logging test payload:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to log test payload",
-    });
+    ResponseHelper.error(res, "Failed to log test payload");
   }
 });
 
@@ -246,13 +304,13 @@ app.use((req: Request, res: Response) => {
     path: req.path,
     ip: req.ip,
   });
-  res.status(404).json({ message: "Route not found" });
+  ResponseHelper.error(res, "Route not found");
 });
 
 // Error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   logger.error("Unhandled error:", err);
-  res.status(500).json({ message: "Internal server error" });
+  ResponseHelper.error(res, "Internal server error");
 });
 
 export default app;

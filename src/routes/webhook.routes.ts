@@ -3,6 +3,7 @@ import {
   handleQiscusWebhook,
   testWebhook,
 } from "../controllers/webhook.controller";
+import ResponseHelper from "../utils/api-response.helper";
 
 const router = Router();
 
@@ -18,8 +19,7 @@ router.post("/qiscus", handleQiscusWebhook);
 
 // GET /webhooks/qiscus - untuk test connection
 router.get("/qiscus", (req, res) => {
-  res.status(200).json({
-    success: true,
+  ResponseHelper.success(res, {
     message: "Qiscus webhook endpoint is ready",
     method: "POST",
     endpoint: "/webhooks/qiscus",
@@ -33,8 +33,7 @@ router.post("/test", testWebhook);
 
 // GET /webhooks/test - untuk test connection
 router.get("/test", (req, res) => {
-  res.status(200).json({
-    success: true,
+  ResponseHelper.success(res, {
     message: "Test webhook endpoint is ready",
     method: "POST",
     endpoint: "/webhooks/test",
@@ -43,8 +42,7 @@ router.get("/test", (req, res) => {
 
 // Debug: List all available webhook endpoints
 router.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
+  ResponseHelper.success(res, {
     message: "Webhook endpoints available",
     endpoints: [
       {
