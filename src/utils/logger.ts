@@ -1,3 +1,4 @@
+// src/utils/logger.ts - UPDATED WITH USER ID SUPPORT
 import winston from "winston";
 import DatabaseService from "../services/database.service";
 
@@ -22,21 +23,33 @@ const logger = winston.createLogger({
   ],
 });
 
-// Custom database logger wrapper
+// Custom database logger wrapper with user tracking
 const dbLogger = {
   error: (message: string, meta?: any) => {
     logger.error(message, meta);
-    DatabaseService.logSystem("error", message, meta);
+    DatabaseService.logSystem("error", message, {
+      ...meta,
+      userId: meta?.userId || meta?.user?.userId || null,
+      userEmail: meta?.user?.email || null,
+    });
   },
   warn: (message: string, meta?: any) => {
     logger.warn(message, meta);
-    DatabaseService.logSystem("warn", message, meta);
+    DatabaseService.logSystem("warn", message, {
+      ...meta,
+      userId: meta?.userId || meta?.user?.userId || null,
+      userEmail: meta?.user?.email || null,
+    });
   },
   info: (message: string, meta?: any) => {
     logger.info(message, meta);
     // Only log important info to database
     if (meta?.important) {
-      DatabaseService.logSystem("info", message, meta);
+      DatabaseService.logSystem("info", message, {
+        ...meta,
+        userId: meta?.userId || meta?.user?.userId || null,
+        userEmail: meta?.user?.email || null,
+      });
     }
   },
   debug: (message: string, meta?: any) => {

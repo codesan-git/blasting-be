@@ -14,6 +14,7 @@ import {
 import { TemplateService } from "../services/template.service";
 import DatabaseService from "../services/database.service";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 export const sendMessageBlast = async (
   req: Request,
@@ -30,19 +31,18 @@ export const sendMessageBlast = async (
 
     // Validasi input
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Recipients array is required and cannot be empty",
-      });
+      ResponseHelper.error(
+        res,
+        "Recipients array is required and cannot be empty"
+      );
       return;
     }
 
     if (!channels || !Array.isArray(channels) || channels.length === 0) {
-      res.status(400).json({
-        success: false,
-        message:
-          'Channels array is required. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]',
-      });
+      ResponseHelper.error(
+        res,
+        'Channels array is required. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]'
+      );
       return;
     }
 
@@ -53,30 +53,24 @@ export const sendMessageBlast = async (
     );
 
     if (invalidChannels.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid channels: ${invalidChannels.join(
+      ResponseHelper.error(
+        res,
+        `Invalid channels: ${invalidChannels.join(
           ", "
-        )}. Valid channels: ${validChannels.join(", ")}`,
-      });
+        )}. Valid channels: ${validChannels.join(", ")}`
+      );
       return;
     }
 
     if (!templateId) {
-      res.status(400).json({
-        success: false,
-        message: "Template ID is required",
-      });
+      ResponseHelper.error(res, "Template ID is required");
       return;
     }
 
     // Get template
     const template = TemplateService.getTemplateById(templateId);
     if (!template) {
-      res.status(404).json({
-        success: false,
-        message: `Template with ID '${templateId}' not found`,
-      });
+      ResponseHelper.error(res, `Template with ID '${templateId}' not found`);
       return;
     }
 
@@ -86,14 +80,14 @@ export const sendMessageBlast = async (
     );
 
     if (incompatibleChannels.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: `Template '${
+      ResponseHelper.error(
+        res,
+        `Template '${
           template.name
         }' is only available for channels: ${template.channels.join(
           ", "
-        )}. You requested: ${channels.join(", ")}`,
-      });
+        )}. You requested: ${channels.join(", ")}`
+      );
       return;
     }
 
@@ -124,10 +118,10 @@ export const sendMessageBlast = async (
       for (const selectedChannel of channels) {
         if (selectedChannel === "email" && recipient.email) {
           if (!from) {
-            res.status(400).json({
-              success: false,
-              message: "From email is required when sending emails",
-            });
+            ResponseHelper.error(
+              res,
+              "From email is required when sending emails"
+            );
             return;
           }
 
@@ -224,11 +218,10 @@ export const sendMessageBlast = async (
     }
 
     if (messageJobs.length === 0) {
-      res.status(400).json({
-        success: false,
-        message:
-          "No valid recipients found for the selected channel(s). Make sure recipients have required contact info (email/phone).",
-      });
+      ResponseHelper.error(
+        res,
+        "No valid recipients found for the selected channel(s). Make sure recipients have required contact info (email/phone)."
+      );
       return;
     }
 
@@ -275,9 +268,7 @@ export const sendMessageBlast = async (
       qiscusEnabled: !!template.qiscusConfig,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Message blast queued successfully",
+    const data = {
       totalMessages: messageJobs.length,
       channels: channels,
       template: {
@@ -287,14 +278,11 @@ export const sendMessageBlast = async (
         qiscusEnabled: !!template.qiscusConfig,
       },
       jobIds,
-    });
+    };
+    ResponseHelper.success(res, data, "Message blast queued successfully");
   } catch (error) {
     logger.error("Error in sendMessageBlast:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to queue message blast",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    ResponseHelper.error(res, `Failed to queue message blast: ${error}`);
   }
 };
 
@@ -312,20 +300,21 @@ export const getQueueStats = async (
       messageQueue.getFailedCount(),
     ]);
 
-    res.status(200).json({
-      success: true,
+    const data = {
       stats: {
         waiting,
         active,
         completed,
         failed,
       },
-    });
+    };
+    ResponseHelper.success(
+      res,
+      data,
+      "Queue statistics retrieved successfully"
+    );
   } catch (error) {
     logger.error("Error getting queue stats:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get queue statistics",
-    });
+    ResponseHelper.error(res, `Failed to get queue statistics: ${error}`);
   }
 };

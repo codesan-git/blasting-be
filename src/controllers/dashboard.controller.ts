@@ -7,6 +7,7 @@ import DatabaseService, {
 } from "../services/database.service";
 import { messageQueue } from "../queues/message.queue";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 interface QueueStats {
   waiting: number;
@@ -65,12 +66,9 @@ export const getDashboardStats = async (
       },
     };
 
-    res.status(200).json(response);
+    ResponseHelper.success(res, response);
   } catch (error) {
     logger.error("Error getting dashboard stats:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get dashboard stats",
-    });
+    ResponseHelper.error(res, "Failed to get dashboard stats");
   }
 };

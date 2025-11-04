@@ -6,6 +6,7 @@ import {
   QiscusIncomingPayload,
 } from "../types/qiscus.types";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 /**
  * Handle incoming webhook from Qiscus
@@ -40,10 +41,7 @@ export const handleQiscusWebhook = async (
         important: true,
       });
 
-      res.status(200).json({
-        success: true,
-        message: "Webhook received but payload invalid",
-      });
+      ResponseHelper.success(res, "Webhook received but payload invalid");
       return;
     }
 
@@ -68,11 +66,7 @@ export const handleQiscusWebhook = async (
     });
 
     // Always respond with 200 to acknowledge receipt
-    res.status(200).json({
-      success: true,
-      message: "Webhook received",
-      requestId,
-    });
+    ResponseHelper.success(res, "Webhook received");
   } catch (error) {
     logger.error("=== WEBHOOK PROCESSING ERROR ===", {
       requestId,
@@ -83,11 +77,7 @@ export const handleQiscusWebhook = async (
     });
 
     // Still return 200 to prevent Qiscus from retrying
-    res.status(200).json({
-      success: true,
-      message: "Webhook received with errors",
-      requestId,
-    });
+    ResponseHelper.success(res, "Webhook received with errors");
   }
 };
 
@@ -311,8 +301,7 @@ export const testWebhook = async (
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
+    ResponseHelper.success(res, {
       message: "Webhook test successful",
       testId,
       received: req.body,
@@ -325,10 +314,6 @@ export const testWebhook = async (
       important: true,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Webhook test failed",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    ResponseHelper.error(res, "Webhook test failed");
   }
 };

@@ -7,6 +7,7 @@ import {
 } from "../types/email.types";
 import { ChannelType } from "../types/template.types";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 export const sendEmailBlast = async (
   req: Request,
@@ -17,18 +18,15 @@ export const sendEmailBlast = async (
 
     // Validasi input
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Recipients array is required and cannot be empty",
-      });
+      ResponseHelper.error(
+        res,
+        "Recipients array is required and cannot be empty"
+      );
       return;
     }
 
     if (!subject || !body || !from) {
-      res.status(400).json({
-        success: false,
-        message: "Subject, body, and from fields are required",
-      });
+      ResponseHelper.error(res, "Subject, body, and from fields are required");
       return;
     }
 
@@ -56,14 +54,10 @@ export const sendEmailBlast = async (
       subject,
     });
 
-    res.status(200).json(response);
+    ResponseHelper.success(res, response);
   } catch (error) {
     logger.error("Error in sendEmailBlast:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to queue email blast",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    ResponseHelper.error(res, "Failed to queue email blast");
   }
 };
 
@@ -81,7 +75,7 @@ export const getQueueStats = async (
       emailQueue.getFailedCount(),
     ]);
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       stats: {
         waiting,
@@ -92,9 +86,6 @@ export const getQueueStats = async (
     });
   } catch (error) {
     logger.error("Error getting queue stats:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get queue statistics",
-    });
+    ResponseHelper.error(res, "Failed to get queue statistics");
   }
 };
