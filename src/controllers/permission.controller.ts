@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import DatabaseService from "../services/database.service";
 import { Permission } from "../types/auth.types";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 /**
  * Get all available permissions
@@ -15,7 +16,7 @@ export const getAllPermissions = async (
   try {
     const allPermissions = Object.values(Permission);
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       count: allPermissions.length,
       permissions: allPermissions,
@@ -26,10 +27,7 @@ export const getAllPermissions = async (
       userId: req.user?.userId,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to get permissions",
-    });
+    ResponseHelper.error(res, "Failed to get permissions");
   }
 };
 
@@ -46,7 +44,7 @@ export const getRolePermissions = async (
 
     const permissions = DatabaseService.getRolePermissions(role);
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       role,
       count: permissions.length,
@@ -59,10 +57,7 @@ export const getRolePermissions = async (
       role: req.params.role,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to get role permissions",
-    });
+    ResponseHelper.error(res, "Failed to get role permissions");
   }
 };
 
@@ -77,7 +72,7 @@ export const getAllRolePermissions = async (
   try {
     const rolePermissions = DatabaseService.getAllRolePermissions();
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       roles: Object.keys(rolePermissions),
       permissions: rolePermissions,
@@ -88,10 +83,7 @@ export const getAllRolePermissions = async (
       userId: req.user?.userId,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to get role permissions",
-    });
+    ResponseHelper.error(res, "Failed to get role permissions");
   }
 };
 
@@ -108,21 +100,14 @@ export const addRolePermission = async (
     const { permission } = req.body;
 
     if (!permission) {
-      res.status(400).json({
-        success: false,
-        message: "Permission is required",
-      });
+      ResponseHelper.error(res, "Permission is required");
       return;
     }
 
     // Validate permission
     const validPermissions = Object.values(Permission);
     if (!validPermissions.includes(permission)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid permission: ${permission}`,
-        validPermissions,
-      });
+      ResponseHelper.error(res, `Invalid permission: ${permission}`);
       return;
     }
 
@@ -134,10 +119,7 @@ export const addRolePermission = async (
     );
 
     if (!success) {
-      res.status(400).json({
-        success: false,
-        message: "Permission already exists for this role",
-      });
+      ResponseHelper.error(res, "Permission already exists for this role");
       return;
     }
 
@@ -149,7 +131,7 @@ export const addRolePermission = async (
       important: true,
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       message: "Permission added successfully",
       role,
@@ -162,10 +144,7 @@ export const addRolePermission = async (
       role: req.params.role,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to add permission",
-    });
+    ResponseHelper.error(res, "Failed to add permission");
   }
 };
 
@@ -184,10 +163,7 @@ export const removeRolePermission = async (
     const success = DatabaseService.removeRolePermission(role, permission);
 
     if (!success) {
-      res.status(404).json({
-        success: false,
-        message: "Permission not found for this role",
-      });
+      ResponseHelper.error(res, "Permission not found for this role");
       return;
     }
 
@@ -199,7 +175,7 @@ export const removeRolePermission = async (
       important: true,
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       message: "Permission removed successfully",
       role,
@@ -213,10 +189,7 @@ export const removeRolePermission = async (
       permission: req.params.permission,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to remove permission",
-    });
+    ResponseHelper.error(res, "Failed to remove permission");
   }
 };
 
@@ -233,10 +206,7 @@ export const setRolePermissions = async (
     const { permissions } = req.body;
 
     if (!Array.isArray(permissions)) {
-      res.status(400).json({
-        success: false,
-        message: "Permissions must be an array",
-      });
+      ResponseHelper.error(res, "Permissions must be an array");
       return;
     }
 
@@ -247,11 +217,10 @@ export const setRolePermissions = async (
     );
 
     if (invalidPermissions.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid permissions: ${invalidPermissions.join(", ")}`,
-        validPermissions,
-      });
+      ResponseHelper.error(
+        res,
+        `Invalid permissions: ${invalidPermissions.join(", ")}`
+      );
       return;
     }
 
@@ -266,10 +235,7 @@ export const setRolePermissions = async (
     );
 
     if (!success) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to set role permissions",
-      });
+      ResponseHelper.error(res, "Failed to set role permissions");
       return;
     }
 
@@ -288,7 +254,7 @@ export const setRolePermissions = async (
       important: true,
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       message: "Role permissions updated successfully",
       role,
@@ -305,10 +271,7 @@ export const setRolePermissions = async (
       role: req.params.role,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to set role permissions",
-    });
+    ResponseHelper.error(res, "Failed to set role permissions");
   }
 };
 
@@ -323,7 +286,7 @@ export const getPermissionStats = async (
   try {
     const stats = DatabaseService.getPermissionStats();
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       count: stats.length,
       stats,
@@ -334,9 +297,6 @@ export const getPermissionStats = async (
       userId: req.user?.userId,
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to get permission statistics",
-    });
+    ResponseHelper.error(res, "Failed to get permission statistics");
   }
 };

@@ -44,23 +44,14 @@ export const getTemplateById = async (
     const template = TemplateService.getTemplateById(id);
 
     if (!template) {
-      res.status(404).json({
-        success: false,
-        message: `Template with ID '${id}' not found`,
-      });
+      ResponseHelper.error(res, `Template with ID '${id}' not found`);
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      template,
-    });
+    ResponseHelper.success(res, template);
   } catch (error) {
     logger.error("Error getting template:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get template",
-    });
+    ResponseHelper.error(res, "Failed to get template");
   }
 };
 
@@ -77,17 +68,13 @@ export const getTemplateRequirements = async (
     const template = TemplateService.getTemplateById(id);
 
     if (!template) {
-      res.status(404).json({
-        success: false,
-        message: `Template with ID '${id}' not found`,
-      });
+      ResponseHelper.error(res, `Template with ID '${id}' not found`);
       return;
     }
 
     const requirements = TemplateService.getTemplateRequirements(id);
 
-    res.status(200).json({
-      success: true,
+    ResponseHelper.success(res, {
       templateId: id,
       templateName: template.name,
       channels: template.channels,
@@ -97,10 +84,7 @@ export const getTemplateRequirements = async (
     });
   } catch (error) {
     logger.error("Error getting template requirements:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get template requirements",
-    });
+    ResponseHelper.error(res, "Failed to get template requirements");
   }
 };
 
@@ -118,27 +102,21 @@ export const validateTemplateVariables = async (
     const { variables } = req.body;
 
     if (!variables || typeof variables !== "object") {
-      res.status(400).json({
-        success: false,
-        message: "Variables object is required",
-      });
+      ResponseHelper.error(res, "Variables object is required");
       return;
     }
 
     const template = TemplateService.getTemplateById(id);
 
     if (!template) {
-      res.status(404).json({
-        success: false,
-        message: `Template with ID '${id}' not found`,
-      });
+      ResponseHelper.error(res, `Template with ID '${id}' not found`);
       return;
     }
 
     const validation = TemplateService.validateVariables(id, variables);
 
     if (validation.valid) {
-      res.status(200).json({
+      ResponseHelper.success(res, {
         success: true,
         message: "All variables are valid",
         validation: {
@@ -148,24 +126,11 @@ export const validateTemplateVariables = async (
         },
       });
     } else {
-      res.status(400).json({
-        success: false,
-        message: "Variable validation failed",
-        validation: {
-          valid: false,
-          errors: validation.errors,
-          missing: validation.missing,
-          providedVariables: Object.keys(variables),
-          requiredVariables: template.variables,
-        },
-      });
+      ResponseHelper.error(res, `Variable validation failed: ${validation}`);
     }
   } catch (error) {
     logger.error("Error validating template variables:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to validate template variables",
-    });
+    ResponseHelper.error(res, "Failed to validate template variables");
   }
 };
 
@@ -186,28 +151,24 @@ export const createTemplate = async (
     } = req.body;
 
     if (!id || !name || !type || !channels || !body) {
-      res.status(400).json({
-        success: false,
-        message: "Missing required fields: id, name, type, channels, body",
-      });
+      ResponseHelper.error(
+        res,
+        "Missing required fields: id, name, type, channels, body"
+      );
       return;
     }
 
     if (!Array.isArray(channels) || channels.length === 0) {
-      res.status(400).json({
-        success: false,
-        message:
-          'Channels must be a non-empty array. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]',
-      });
+      ResponseHelper.error(
+        res,
+        'Channels must be a non-empty array. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]'
+      );
       return;
     }
 
     // Check if template ID already exists
     if (TemplateService.getTemplateById(id)) {
-      res.status(409).json({
-        success: false,
-        message: `Template with ID '${id}' already exists`,
-      });
+      ResponseHelper.error(res, `Template with ID '${id}' already exists`);
       return;
     }
 
@@ -224,17 +185,10 @@ export const createTemplate = async (
 
     logger.info("Template created", { templateId: id, name });
 
-    res.status(201).json({
-      success: true,
-      message: "Template created successfully",
-      template,
-    });
+    ResponseHelper.success(res, template, "Template created successfully");
   } catch (error) {
     logger.error("Error creating template:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to create template",
-    });
+    ResponseHelper.error(res, "Failed to create template");
   }
 };
 
@@ -249,26 +203,16 @@ export const updateTemplate = async (
     const template = TemplateService.updateTemplate(id, updates);
 
     if (!template) {
-      res.status(404).json({
-        success: false,
-        message: `Template with ID '${id}' not found`,
-      });
+      ResponseHelper.error(res, `Template with ID '${id}' not found`);
       return;
     }
 
     logger.info("Template updated", { templateId: id });
 
-    res.status(200).json({
-      success: true,
-      message: "Template updated successfully",
-      template,
-    });
+    ResponseHelper.success(res, template, "Template updated successfully");
   } catch (error) {
     logger.error("Error updating template:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update template",
-    });
+    ResponseHelper.error(res, "Failed to update template");
   }
 };
 
@@ -281,24 +225,16 @@ export const deleteTemplate = async (
     const deleted = TemplateService.deleteTemplate(id);
 
     if (!deleted) {
-      res.status(404).json({
-        success: false,
-        message: `Template with ID '${id}' not found`,
-      });
+      ResponseHelper.error(res, `Template with ID '${id}' not found`);
       return;
     }
 
     logger.info("Template deleted", { templateId: id });
+    const template = TemplateService.getTemplateById(id);
 
-    res.status(200).json({
-      success: true,
-      message: "Template deleted successfully",
-    });
+    ResponseHelper.success(res, template, "Template deleted successfully");
   } catch (error) {
     logger.error("Error deleting template:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete template",
-    });
+    ResponseHelper.error(res, "Failed to delete template");
   }
 };

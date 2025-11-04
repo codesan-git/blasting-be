@@ -148,13 +148,17 @@ app.get(
       config = await qiscusWebhookService.getWebhookConfig();
     }
 
-    res.status(200).json({
-      success: true,
+    const data = {
       webhook: {
         ...status,
         currentConfig: config,
       },
-    });
+    };
+    ResponseHelper.success(
+      res,
+      data,
+      "Qiscus webhook status retrieved successfully"
+    );
   }
 );
 
@@ -168,10 +172,7 @@ app.post(
       const { templateId, variables } = req.body;
 
       if (!templateId) {
-        res.status(400).json({
-          success: false,
-          message: "templateId is required",
-        });
+        ResponseHelper.error(res, "templateId is required");
         return;
       }
 
@@ -179,10 +180,7 @@ app.post(
       const template = TemplateService.getTemplateById(templateId);
 
       if (!template) {
-        res.status(404).json({
-          success: false,
-          message: `Template '${templateId}' not found`,
-        });
+        ResponseHelper.error(res, `Template '${templateId}' not found`);
         return;
       }
 
@@ -191,8 +189,7 @@ app.post(
         variables || {}
       );
 
-      res.status(200).json({
-        success: true,
+      const data = {
         template: {
           id: template.id,
           name: template.name,
@@ -204,14 +201,11 @@ app.post(
           body: rendered.body,
           bodyLength: rendered.body.length,
         },
-      });
+      };
+      ResponseHelper.success(res, data, "Template rendered successfully");
     } catch (error) {
       logger.error("Error testing template:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to test template",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      ResponseHelper.error(res, "Failed to test template");
     }
   }
 );
@@ -239,17 +233,18 @@ app.get(
           log.message.includes("Qiscus")
       );
 
-      res.status(200).json({
-        success: true,
+      const data = {
         count: webhookLogs.length,
         logs: webhookLogs,
-      });
+      };
+      ResponseHelper.success(
+        res,
+        data,
+        "Webhook debug logs retrieved successfully"
+      );
     } catch (error) {
       logger.error("Error getting webhook debug logs:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get webhook debug logs",
-      });
+      ResponseHelper.error(res, "Failed to get webhook debug logs");
     }
   }
 );
@@ -266,23 +261,17 @@ app.get(
       const message = DatabaseService.getMessageByMessageId(messageId);
 
       if (!message) {
-        res.status(404).json({
-          success: false,
-          message: `Message with ID '${messageId}' not found`,
-        });
+        ResponseHelper.error(res, `Message with ID '${messageId}' not found`);
         return;
       }
 
-      res.status(200).json({
-        success: true,
+      const data = {
         message,
-      });
+      };
+      ResponseHelper.success(res, data, "Message retrieved successfully");
     } catch (error) {
       logger.error("Error getting message by ID:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get message",
-      });
+      ResponseHelper.error(res, "Failed to get message");
     }
   }
 );
@@ -296,18 +285,15 @@ app.post("/api/webhooks/test-payload", async (req: Request, res: Response) => {
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
+    const data = {
       message: "Test payload logged successfully",
       received: req.body,
       timestamp: new Date().toISOString(),
-    });
+    };
+    ResponseHelper.success(res, data, "Test payload logged successfully");
   } catch (error) {
     logger.error("Error logging test payload:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to log test payload",
-    });
+    ResponseHelper.error(res, "Failed to log test payload");
   }
 });
 

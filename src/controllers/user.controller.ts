@@ -8,6 +8,7 @@ import {
   getUserPermissions,
 } from "../types/auth.types";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 /**
  * Get all users
@@ -29,20 +30,13 @@ export const getAllUsers = async (
       };
     });
 
-    res.status(200).json({
-      success: true,
-      count: usersWithoutPassword.length,
-      users: usersWithoutPassword,
-    });
+    ResponseHelper.success(res, usersWithoutPassword);
   } catch (error) {
     logger.error("Get all users error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to get users",
-    });
+    ResponseHelper.error(res, "Failed to get users");
   }
 };
 
@@ -59,32 +53,20 @@ export const getUserById = async (
     const user = DatabaseService.getUserById(id);
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      ResponseHelper.error(res, "User not found");
       return;
     }
 
     // Remove password from response
     const { password, ...userWithoutPassword } = user;
 
-    res.status(200).json({
-      success: true,
-      user: {
-        ...userWithoutPassword,
-        permissions: getUserPermissions(user.roles),
-      },
-    });
+    ResponseHelper.success(res, userWithoutPassword);
   } catch (error) {
     logger.error("Get user by ID error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to get user",
-    });
+    ResponseHelper.error(res, "Failed to get user");
   }
 };
 
@@ -104,10 +86,7 @@ export const updateUser = async (
     const user = DatabaseService.getUserById(id);
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      ResponseHelper.error(res, "User not found");
       return;
     }
 
@@ -119,11 +98,11 @@ export const updateUser = async (
       );
 
       if (invalidRoles.length > 0) {
-        res.status(400).json({
-          success: false,
-          message: `Invalid roles: ${invalidRoles.join(", ")}`,
-          validRoles,
-        });
+        ResponseHelper.error(
+          res,
+          `Invalid roles: ${invalidRoles.join(", ")}`,
+          validRoles.length
+        );
         return;
       }
 
@@ -148,12 +127,11 @@ export const updateUser = async (
             important: true,
           });
 
-          res.status(403).json({
-            success: false,
-            message: `Cannot add super admin role. Maximum ${MAX_SUPER_ADMINS} super admins allowed.`,
-            currentSuperAdmins: superAdminCount,
-            maxAllowed: MAX_SUPER_ADMINS,
-          });
+          ResponseHelper.error(
+            res,
+            `Cannot add super admin role. Maximum ${MAX_SUPER_ADMINS} super admins allowed.`,
+            superAdminCount
+          );
           return;
         }
       }
@@ -175,13 +153,11 @@ export const updateUser = async (
             important: true,
           });
 
-          res.status(403).json({
-            success: false,
-            message:
-              "Cannot remove super admin role from the last super admin. At least one super admin must exist.",
-            currentSuperAdmins: superAdminCount,
-            minRequired: MIN_SUPER_ADMINS,
-          });
+          ResponseHelper.error(
+            res,
+            `Cannot remove super admin role from the last super admin. At least one super admin must exist.`,
+            superAdminCount
+          );
           return;
         }
       }
@@ -192,10 +168,7 @@ export const updateUser = async (
       const existingUser = DatabaseService.getUserByEmail(updates.email);
 
       if (existingUser) {
-        res.status(400).json({
-          success: false,
-          message: "Email already exists",
-        });
+        ResponseHelper.error(res, "Email already exists");
         return;
       }
     }
@@ -204,10 +177,7 @@ export const updateUser = async (
     const success = DatabaseService.updateUser(id, updates);
 
     if (!success) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to update user",
-      });
+      ResponseHelper.error(res, "Failed to update user");
       return;
     }
 
@@ -215,10 +185,7 @@ export const updateUser = async (
     const updatedUser = DatabaseService.getUserById(id);
 
     if (!updatedUser) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to get updated user",
-      });
+      ResponseHelper.error(res, "Failed to get updated user");
       return;
     }
 
@@ -232,8 +199,7 @@ export const updateUser = async (
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
+    ResponseHelper.success(res, {
       message: "User updated successfully",
       user: {
         ...userWithoutPassword,
@@ -245,10 +211,7 @@ export const updateUser = async (
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to update user",
-    });
+    ResponseHelper.error(res, "Failed to update user");
   }
 };
 
@@ -267,19 +230,13 @@ export const deleteUser = async (
     const user = DatabaseService.getUserById(id);
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      ResponseHelper.error(res, "User not found");
       return;
     }
 
     // Prevent deleting yourself
     if (req.user && req.user.userId === id) {
-      res.status(400).json({
-        success: false,
-        message: "You cannot delete your own account",
-      });
+      ResponseHelper.error(res, "You cannot delete your own account");
       return;
     }
 
@@ -287,10 +244,7 @@ export const deleteUser = async (
     const success = DatabaseService.deleteUser(id);
 
     if (!success) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to delete user",
-      });
+      ResponseHelper.error(res, "Failed to delete user");
       return;
     }
 
@@ -301,19 +255,13 @@ export const deleteUser = async (
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "User deleted successfully",
-    });
+    ResponseHelper.success(res, "User deleted successfully");
   } catch (error) {
     logger.error("Delete user error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete user",
-    });
+    ResponseHelper.error(res, "Failed to delete user");
   }
 };
 
@@ -332,19 +280,13 @@ export const deactivateUser = async (
     const user = DatabaseService.getUserById(id);
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      ResponseHelper.error(res, "User not found");
       return;
     }
 
     // Prevent deactivating yourself
     if (req.user && req.user.userId === id) {
-      res.status(400).json({
-        success: false,
-        message: "You cannot deactivate your own account",
-      });
+      ResponseHelper.error(res, "You cannot deactivate your own account");
       return;
     }
 
@@ -352,10 +294,7 @@ export const deactivateUser = async (
     const success = DatabaseService.deactivateUser(id);
 
     if (!success) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to deactivate user",
-      });
+      ResponseHelper.error(res, "Failed to deactivate user");
       return;
     }
 
@@ -369,19 +308,13 @@ export const deactivateUser = async (
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "User deactivated successfully",
-    });
+    ResponseHelper.success(res, "User deactivated successfully");
   } catch (error) {
     logger.error("Deactivate user error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to deactivate user",
-    });
+    ResponseHelper.error(res, "Failed to deactivate user");
   }
 };
 
@@ -400,10 +333,7 @@ export const activateUser = async (
     const user = DatabaseService.getUserById(id);
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      ResponseHelper.error(res, "User not found");
       return;
     }
 
@@ -411,10 +341,7 @@ export const activateUser = async (
     const success = DatabaseService.activateUser(id);
 
     if (!success) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to activate user",
-      });
+      ResponseHelper.error(res, "Failed to activate user");
       return;
     }
 
@@ -425,19 +352,13 @@ export const activateUser = async (
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "User activated successfully",
-    });
+    ResponseHelper.success(res, "User activated successfully");
   } catch (error) {
     logger.error("Activate user error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to activate user",
-    });
+    ResponseHelper.error(res, "Failed to activate user");
   }
 };
 
@@ -454,18 +375,12 @@ export const resetUserPassword = async (
     const { newPassword } = req.body;
 
     if (!newPassword) {
-      res.status(400).json({
-        success: false,
-        message: "New password is required",
-      });
+      ResponseHelper.error(res, "New password is required");
       return;
     }
 
     if (newPassword.length < 8) {
-      res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters long",
-      });
+      ResponseHelper.error(res, "Password must be at least 8 characters long");
       return;
     }
 
@@ -473,10 +388,7 @@ export const resetUserPassword = async (
     const user = DatabaseService.getUserById(id);
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      ResponseHelper.error(res, "User not found");
       return;
     }
 
@@ -487,10 +399,7 @@ export const resetUserPassword = async (
     const success = DatabaseService.updateUserPassword(id, hashedPassword);
 
     if (!success) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to reset password",
-      });
+      ResponseHelper.error(res, "Failed to reset password");
       return;
     }
 
@@ -504,18 +413,15 @@ export const resetUserPassword = async (
       important: true,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Password reset successfully. User must login again.",
-    });
+    ResponseHelper.success(
+      res,
+      "Password reset successfully. User must login again."
+    );
   } catch (error) {
     logger.error("Reset password error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to reset password",
-    });
+    ResponseHelper.error(res, "Failed to reset password");
   }
 };

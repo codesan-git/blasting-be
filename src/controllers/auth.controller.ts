@@ -41,17 +41,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       important: true,
     });
 
-    // res.status(200).json(result);
     ResponseHelper.success(res, result);
   } catch (error) {
     logger.error("Login error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    // res.status(500).json({
-    //   success: false,
-    //   message: "Login failed due to server error",
-    // });
     ResponseHelper.error(res, "Login failed due to server error");
   }
 };
@@ -68,30 +63,24 @@ export const refreshToken = async (
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      res.status(400).json({
-        success: false,
-        message: "Refresh token is required",
-      });
+      ResponseHelper.error(res, "Refresh token is required");
       return;
     }
 
     const result = await authService.refreshAccessToken(refreshToken);
 
     if (!result.success) {
-      res.status(401).json(result);
+      ResponseHelper.error(res, result.message);
       return;
     }
 
-    res.status(200).json(result);
+    ResponseHelper.success(res, result);
   } catch (error) {
     logger.error("Token refresh error", {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to refresh token",
-    });
+    ResponseHelper.error(res, "Failed to refresh token");
   }
 };
 
@@ -104,10 +93,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      res.status(400).json({
-        success: false,
-        message: "Refresh token is required",
-      });
+      ResponseHelper.error(res, "Refresh token is required");
       return;
     }
 
@@ -120,7 +106,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
       important: true,
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       message: "Logged out successfully",
     });
@@ -129,10 +115,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Logout failed",
-    });
+    ResponseHelper.error(res, "Logout failed");
   }
 };
 
@@ -146,20 +129,14 @@ export const getProfile = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      ResponseHelper.error(res, "Authentication required");
       return;
     }
 
     const user = DatabaseService.getUserById(req.user.userId);
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      ResponseHelper.error(res, "User not found");
       return;
     }
 
@@ -169,8 +146,7 @@ export const getProfile = async (
     // Don't send password
     const { password, ...userWithoutPassword } = user;
 
-    res.status(200).json({
-      success: true,
+    ResponseHelper.success(res, {
       user: {
         ...userWithoutPassword,
         permissions,
@@ -181,10 +157,7 @@ export const getProfile = async (
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to get profile",
-    });
+    ResponseHelper.error(res, "Failed to get profile");
   }
 };
 
@@ -198,28 +171,25 @@ export const changePassword = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      ResponseHelper.error(res, "Authentication required");
       return;
     }
 
     const { currentPassword, newPassword }: ChangePasswordRequest = req.body;
 
     if (!currentPassword || !newPassword) {
-      res.status(400).json({
-        success: false,
-        message: "Current password and new password are required",
-      });
+      ResponseHelper.error(
+        res,
+        "Current password and new password are required"
+      );
       return;
     }
 
     if (newPassword.length < 8) {
-      res.status(400).json({
-        success: false,
-        message: "New password must be at least 8 characters long",
-      });
+      ResponseHelper.error(
+        res,
+        "New password must be at least 8 characters long"
+      );
       return;
     }
 
@@ -230,10 +200,7 @@ export const changePassword = async (
     );
 
     if (!success) {
-      res.status(400).json({
-        success: false,
-        message: "Current password is incorrect",
-      });
+      ResponseHelper.error(res, "Current password is incorrect");
       return;
     }
 
@@ -243,7 +210,7 @@ export const changePassword = async (
       important: true,
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       message: "Password changed successfully. Please login again.",
     });
@@ -252,10 +219,7 @@ export const changePassword = async (
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to change password",
-    });
+    ResponseHelper.error(res, "Failed to change password");
   }
 };
 
@@ -269,26 +233,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // Validation
     if (!email || !password || !name || !roles) {
-      res.status(400).json({
-        success: false,
-        message: "Email, password, name, and roles are required",
-      });
+      ResponseHelper.error(
+        res,
+        "Email, password, name, and roles are required"
+      );
       return;
     }
 
     if (password.length < 8) {
-      res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters long",
-      });
+      ResponseHelper.error(res, "Password must be at least 8 characters long");
       return;
     }
 
     if (!Array.isArray(roles) || roles.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Roles must be a non-empty array",
-      });
+      ResponseHelper.error(res, "Roles must be a non-empty array");
       return;
     }
 
@@ -297,11 +255,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const invalidRoles = roles.filter((role) => !validRoles.includes(role));
 
     if (invalidRoles.length > 0) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid roles: ${invalidRoles.join(", ")}`,
-        validRoles,
-      });
+      ResponseHelper.error(res, `Invalid roles: ${invalidRoles.join(", ")}`);
       return;
     }
 
@@ -322,12 +276,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           important: true,
         });
 
-        res.status(403).json({
-          success: false,
-          message: `Super admin limit reached. Maximum ${MAX_SUPER_ADMINS} super admins allowed.`,
-          currentSuperAdmins: superAdminCount,
-          maxAllowed: MAX_SUPER_ADMINS,
-        });
+        ResponseHelper.error(
+          res,
+          `Super admin limit reached. Maximum ${MAX_SUPER_ADMINS} super admins allowed.`
+        );
         return;
       }
     }
@@ -337,10 +289,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       const user = await authService.createUser(email, password, name, roles);
 
       if (!user) {
-        res.status(400).json({
-          success: false,
-          message: "Failed to create user. Email might already exist.",
-        });
+        ResponseHelper.error(
+          res,
+          "Failed to create user. Email might already exist."
+        );
         return;
       }
 
@@ -355,7 +307,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         important: true,
       });
 
-      res.status(201).json({
+      ResponseHelper.success(res, {
         success: true,
         message: "User registered successfully",
         user: userWithoutPassword,
@@ -366,10 +318,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         error instanceof Error &&
         error.message.includes("Super admin limit")
       ) {
-        res.status(403).json({
-          success: false,
-          message: error.message,
-        });
+        ResponseHelper.error(res, error.message);
         return;
       }
 
@@ -380,10 +329,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Registration failed due to server error",
-    });
+    ResponseHelper.error(res, "Registration failed due to server error");
   }
 };
 
@@ -397,10 +343,7 @@ export const revokeSessions = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      ResponseHelper.error(res, "Authentication required");
       return;
     }
 
@@ -413,7 +356,7 @@ export const revokeSessions = async (
       important: true,
     });
 
-    res.status(200).json({
+    ResponseHelper.success(res, {
       success: true,
       message: `${count} session(s) revoked successfully. Please login again.`,
       count,
@@ -423,9 +366,6 @@ export const revokeSessions = async (
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to revoke sessions",
-    });
+    ResponseHelper.error(res, "Failed to revoke sessions");
   }
 };

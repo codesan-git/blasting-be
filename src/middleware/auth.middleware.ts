@@ -4,6 +4,7 @@ import authService from "../services/auth.service";
 import DatabaseService from "../services/database.service";
 import { JWTPayload, UserRole, Permission } from "../types/auth.types";
 import logger from "../utils/logger";
+import ResponseHelper from "../utils/api-response.helper";
 
 // Extend Express Request to include user
 declare global {
@@ -27,10 +28,7 @@ export const authenticate = (
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        success: false,
-        message: "No token provided. Please login first.",
-      });
+      ResponseHelper.error(res, "No token provided. Please login first.");
       return;
     }
 
@@ -40,10 +38,10 @@ export const authenticate = (
     const payload = authService.verifyAccessToken(token);
 
     if (!payload) {
-      res.status(401).json({
-        success: false,
-        message: "Invalid or expired token. Please login again.",
-      });
+      ResponseHelper.error(
+        res,
+        "Invalid or expired token. Please login again."
+      );
       return;
     }
 
@@ -62,10 +60,7 @@ export const authenticate = (
       error: error instanceof Error ? error.message : "Unknown error",
     });
 
-    res.status(401).json({
-      success: false,
-      message: "Authentication failed",
-    });
+    ResponseHelper.error(res, "Authentication failed");
   }
 };
 
@@ -77,10 +72,7 @@ export const authenticate = (
 export const requireRole = (roles: UserRole | UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      ResponseHelper.error(res, "Authentication required");
       return;
     }
 
@@ -99,12 +91,7 @@ export const requireRole = (roles: UserRole | UserRole[]) => {
         endpoint: req.path,
       });
 
-      res.status(403).json({
-        success: false,
-        message: "Access denied. Insufficient permissions.",
-        requiredRoles: requiredRoles,
-        yourRoles: userRoles,
-      });
+      ResponseHelper.error(res, "Access denied. Insufficient permissions.");
       return;
     }
 
@@ -120,10 +107,7 @@ export const requireRole = (roles: UserRole | UserRole[]) => {
 export const requirePermission = (permissions: Permission | Permission[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      ResponseHelper.error(res, "Authentication required");
       return;
     }
 
@@ -155,12 +139,10 @@ export const requirePermission = (permissions: Permission | Permission[]) => {
         endpoint: req.path,
       });
 
-      res.status(403).json({
-        success: false,
-        message: "Access denied. You don't have the required permissions.",
-        requiredPermissions: requiredPermissions,
-        missingPermissions: missingPermissions,
-      });
+      ResponseHelper.error(
+        res,
+        "Access denied. You don't have the required permissions."
+      );
       return;
     }
 
@@ -175,10 +157,7 @@ export const requirePermission = (permissions: Permission | Permission[]) => {
 export const requireAnyPermission = (permissions: Permission[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+      ResponseHelper.error(res, "Authentication required");
       return;
     }
 
@@ -202,12 +181,10 @@ export const requireAnyPermission = (permissions: Permission[]) => {
         endpoint: req.path,
       });
 
-      res.status(403).json({
-        success: false,
-        message:
-          "Access denied. You don't have any of the required permissions.",
-        requiredPermissions: permissions,
-      });
+      ResponseHelper.error(
+        res,
+        "Access denied. You don't have any of the required permissions."
+      );
       return;
     }
 
@@ -224,10 +201,7 @@ export const requireActive = (
   next: NextFunction
 ): void => {
   if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: "Authentication required",
-    });
+    ResponseHelper.error(res, "Authentication required");
     return;
   }
 
@@ -240,11 +214,10 @@ export const requireActive = (
       email: req.user.email,
     });
 
-    res.status(403).json({
-      success: false,
-      message:
-        "Your account has been deactivated. Please contact administrator.",
-    });
+    ResponseHelper.error(
+      res,
+      "Your account has been deactivated. Please contact administrator."
+    );
     return;
   }
 
