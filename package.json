@@ -12,7 +12,7 @@
     "backup": "ts-node scripts/manual-backup.ts",
     "setup-auth": "ts-node scripts/setup-auth.ts",
     "check-db": "ts-node scripts/check-database.ts",
-    "create-tables": "ts-node scripts/create-auth-tables.ts",
+    "create-tables": "ts-node scripts/create-tables.ts",
     "manual-user": "ts-node scripts/manual-create-user.ts",
     "test-super-admin": "ts-node scripts/test-super-admin-limit.ts",
     "create-role-permissions": "ts-node scripts/create-role-permissions-table.ts",
