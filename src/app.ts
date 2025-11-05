@@ -30,7 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Trust proxy - important for rate limiting behind reverse proxy
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 // API logging middleware (but skip for webhooks and auth)
 app.use((req: Request, res: Response, next: NextFunction) => {
