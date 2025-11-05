@@ -23,49 +23,63 @@ export const handleQiscusWebhook = async (
   try {
     const payload = req.body as QiscusWebhookPayload;
 
-    // Log webhook receipt with full payload
+    // 🔍 Tentukan type secara otomatis jika tidak ada di body
+    let derivedType: string | undefined = payload.type;
+
+    if (!derivedType) {
+      if ((payload as any).statuses) derivedType = "message_status";
+      else if ((payload as any).messages) derivedType = "incoming_message";
+      else derivedType = "unknown";
+    }
+
+    // Log webhook receipt
     logger.info("=== WEBHOOK RECEIVED ===", {
       requestId,
-      type: payload.type,
+      type: derivedType,
       payload: JSON.stringify(payload),
       headers: JSON.stringify(req.headers),
       ip: req.ip,
       important: true,
     });
 
-    // Validate payload structure
-    if (!payload || !payload.type) {
-      logger.error("Invalid webhook payload - missing type", {
+    // Handle unknown payload
+    if (derivedType === "unknown") {
+      logger.warn("Unknown webhook structure received", {
         requestId,
         body: JSON.stringify(req.body),
         important: true,
       });
 
-      ResponseHelper.success(res, "Webhook received but payload invalid");
+      ResponseHelper.success(res, "Webhook received (unknown structure)");
       return;
     }
 
-    // Handle different webhook types with type narrowing
-    if (payload.type === "message_status") {
-      await handleMessageStatus(payload.payload, requestId);
-    } else if (payload.type === "incoming_message") {
-      await handleIncomingMessage(payload.payload, requestId);
-    } else {
-      logger.warn("Unknown webhook type received", {
-        requestId,
-        type: (payload as any).type,
-        payload: JSON.stringify(payload),
-        important: true,
-      });
+    // 🔄 Gunakan derivedType untuk routing event
+    if (derivedType === "message_status") {
+      const statuses = (payload as any).statuses ?? [];
+      for (const status of statuses) {
+        await handleMessageStatus(
+          {
+            id: status.id,
+            message_id: status.id,
+            status: status.status,
+            timestamp: status.timestamp,
+            from: status.recipient_id,
+            error: undefined,
+          },
+          requestId
+        );
+      }
+    } else if (derivedType === "incoming_message") {
+      await handleIncomingMessage((payload as any).messages[0], requestId);
     }
 
     logger.info("=== WEBHOOK PROCESSED SUCCESSFULLY ===", {
       requestId,
-      type: payload.type,
+      type: derivedType,
       important: true,
     });
 
-    // Always respond with 200 to acknowledge receipt
     ResponseHelper.success(res, "Webhook received");
   } catch (error) {
     logger.error("=== WEBHOOK PROCESSING ERROR ===", {
@@ -76,7 +90,6 @@ export const handleQiscusWebhook = async (
       important: true,
     });
 
-    // Still return 200 to prevent Qiscus from retrying
     ResponseHelper.success(res, "Webhook received with errors");
   }
 };
