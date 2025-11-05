@@ -129,6 +129,7 @@ export interface MessageLog {
   error_message?: string;
   message_id?: string;
   attempts?: number;
+  created_by?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -138,6 +139,8 @@ export interface APILog {
   endpoint: string;
   method: string;
   ip_address?: string;
+  user_id?: string;
+  user_email?: string;
   request_body?: string;
   response_status?: number;
   response_time_ms?: number;
@@ -150,6 +153,8 @@ export interface SystemLog {
   level: string;
   message: string;
   metadata?: string;
+  user_id?: string;
+  user_email?: string;
   created_at?: string;
 }
 
@@ -692,17 +697,19 @@ export class DatabaseService {
     return result.changes;
   }
 
-  // Message Logs
+  /**
+   * Log message with user tracking
+   */
   static logMessage(data: MessageLog): number {
     const jakartaTime = getJakartaTime();
 
     const stmt = db.prepare(`
-      INSERT INTO message_logs (
-        job_id, channel, recipient_email, recipient_phone, recipient_name,
-        template_id, template_name, subject, status, error_message, message_id, attempts,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    INSERT INTO message_logs (
+      job_id, channel, recipient_email, recipient_phone, recipient_name,
+      template_id, template_name, subject, status, error_message, message_id, attempts,
+      created_by, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
 
     const result = stmt.run(
       data.job_id,
@@ -717,6 +724,7 @@ export class DatabaseService {
       data.error_message || null,
       data.message_id || null,
       data.attempts || 1,
+      data.created_by || null,
       jakartaTime,
       jakartaTime
     );
@@ -858,20 +866,25 @@ export class DatabaseService {
     return stmt.all() as MessageStatsByDateRow[];
   }
 
-  // API Logs
+  /**
+   * Log API request with user tracking
+   */
   static logAPI(data: APILog): number {
     const jakartaTime = getJakartaTime();
 
     const stmt = db.prepare(`
-      INSERT INTO api_logs (
-        endpoint, method, ip_address, request_body, response_status, response_time_ms, error_message, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    INSERT INTO api_logs (
+      endpoint, method, ip_address, user_id, user_email,
+      request_body, response_status, response_time_ms, error_message, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
 
     const result = stmt.run(
       data.endpoint,
       data.method,
       data.ip_address || null,
+      data.user_id || null,
+      data.user_email || null,
       data.request_body || null,
       data.response_status || null,
       data.response_time_ms || null,
@@ -882,17 +895,30 @@ export class DatabaseService {
     return result.lastInsertRowid as number;
   }
 
-  static getAPILogs(limit: number = 100, offset: number = 0): APILog[] {
-    const stmt = db.prepare(`
-      SELECT * FROM api_logs 
-      ORDER BY created_at DESC 
-      LIMIT ? OFFSET ?
-    `);
+  /**
+   * Get API logs with user filter
+   */
+  static getAPILogs(
+    limit: number = 100,
+    offset: number = 0,
+    userId?: string
+  ): APILog[] {
+    let query = `
+    SELECT * FROM api_logs
+    ${userId ? "WHERE user_id = ?" : ""}
+    ORDER BY created_at DESC 
+    LIMIT ? OFFSET ?
+  `;
 
-    return stmt.all(limit, offset) as APILog[];
+    const params = userId ? [userId, limit, offset] : [limit, offset];
+    const stmt = db.prepare(query);
+
+    return stmt.all(...params) as APILog[];
   }
 
-  // System Logs
+  /**
+   * Log system event with user tracking
+   */
   static logSystem(
     level: string,
     message: string,
@@ -900,39 +926,128 @@ export class DatabaseService {
   ): number {
     const jakartaTime = getJakartaTime();
 
+    // Extract user info from metadata if exists
+    const userId = metadata?.userId as string | undefined;
+    const userEmail = metadata?.userEmail as string | undefined;
+
     const stmt = db.prepare(`
-      INSERT INTO system_logs (level, message, metadata, created_at)
-      VALUES (?, ?, ?, ?)
-    `);
+    INSERT INTO system_logs (level, message, metadata, user_id, user_email, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
 
     const result = stmt.run(
       level,
       message,
       metadata ? JSON.stringify(metadata) : null,
+      userId || null,
+      userEmail || null,
       jakartaTime
     );
 
     return result.lastInsertRowid as number;
   }
 
+  /**
+   * Get system logs with user filter
+   */
   static getSystemLogs(
     level?: string,
     limit: number = 100,
-    offset: number = 0
+    offset: number = 0,
+    userId?: string
   ): SystemLog[] {
-    let query = "SELECT * FROM system_logs";
-    const params: any[] = [];
+    let conditions = [];
+    let params: any[] = [];
 
     if (level) {
-      query += " WHERE level = ?";
+      conditions.push("level = ?");
       params.push(level);
     }
 
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
-    params.push(limit, offset);
+    if (userId) {
+      conditions.push("user_id = ?");
+      params.push(userId);
+    }
 
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const query = `
+    SELECT * FROM system_logs
+    ${whereClause}
+    ORDER BY created_at DESC 
+    LIMIT ? OFFSET ?
+  `;
+
+    params.push(limit, offset);
     const stmt = db.prepare(query);
+
     return stmt.all(...params) as SystemLog[];
+  }
+
+  /**
+   * Get message logs by user
+   */
+  static getMessageLogsByUser(
+    userId: string,
+    limit: number = 100,
+    offset: number = 0
+  ): MessageLog[] {
+    const stmt = db.prepare(`
+    SELECT * FROM message_logs 
+    WHERE created_by = ?
+    ORDER BY created_at DESC 
+    LIMIT ? OFFSET ?
+  `);
+
+    return stmt.all(userId, limit, offset) as MessageLog[];
+  }
+
+  /**
+   * Get user activity statistics
+   */
+  static getUserActivityStats(userId: string): {
+    totalMessages: number;
+    totalAPIRequests: number;
+    lastActivity: string | null;
+    messagesByChannel: Array<{ channel: string; count: number }>;
+  } {
+    // Total messages sent by user
+    const totalMessages = db
+      .prepare(
+        `SELECT COUNT(*) as count FROM message_logs WHERE created_by = ?`
+      )
+      .get(userId) as { count: number };
+
+    // Total API requests by user
+    const totalAPIRequests = db
+      .prepare(`SELECT COUNT(*) as count FROM api_logs WHERE user_id = ?`)
+      .get(userId) as { count: number };
+
+    // Last activity
+    const lastActivity = db
+      .prepare(
+        `SELECT MAX(created_at) as last_activity FROM api_logs WHERE user_id = ?`
+      )
+      .get(userId) as { last_activity: string | null };
+
+    // Messages by channel
+    const messagesByChannel = db
+      .prepare(
+        `
+    SELECT channel, COUNT(*) as count 
+    FROM message_logs 
+    WHERE created_by = ?
+    GROUP BY channel
+  `
+      )
+      .all(userId) as Array<{ channel: string; count: number }>;
+
+    return {
+      totalMessages: totalMessages.count,
+      totalAPIRequests: totalAPIRequests.count,
+      lastActivity: lastActivity.last_activity,
+      messagesByChannel,
+    };
   }
 
   // Cleanup old logs

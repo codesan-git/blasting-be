@@ -465,6 +465,7 @@ export const sendMessageBlast = async (
           template_name: template.name,
           subject: emailJob.subject,
           status: "queued",
+          created_by: req.user?.userId,
         });
       } else if (metadata.channel === "whatsapp") {
         const waJob = job as WhatsAppJobData;
@@ -476,6 +477,7 @@ export const sendMessageBlast = async (
           template_id: templateId,
           template_name: template.name,
           status: "queued",
+          created_by: req.user?.userId,
         });
       }
     }
@@ -487,6 +489,8 @@ export const sendMessageBlast = async (
       templateId,
       templateName: template.name,
       qiscusEnabled: !!template.qiscusConfig,
+      userId: req.user?.userId,
+      userEmail: req.user?.email,
       important: true,
     });
 

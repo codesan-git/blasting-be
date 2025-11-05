@@ -124,7 +124,7 @@ async function createUser(
       hashedPassword,
       name,
       JSON.stringify(roles),
-      true,
+      1,
       jakartaTime,
       jakartaTime
     );
@@ -328,10 +328,9 @@ async function setupAuth() {
       createAnother.toLowerCase() === "yes" ||
       createAnother.toLowerCase() === "y"
     ) {
-      rl.close();
-      // Restart setup
-      setTimeout(() => setupAuth(), 100);
-      return;
+      console.log("\n🔁 Restarting setup...\n");
+      // Jangan tutup readline, langsung panggil ulang
+      return setupAuth();
     }
 
     console.log("\n✅ Setup complete!");

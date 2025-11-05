@@ -12,12 +12,15 @@
     "backup": "ts-node scripts/manual-backup.ts",
     "setup-auth": "ts-node scripts/setup-auth.ts",
     "check-db": "ts-node scripts/check-database.ts",
-    "create-tables": "ts-node scripts/create-auth-tables.ts",
+    "create-tables": "ts-node scripts/create-tables.ts",
     "manual-user": "ts-node scripts/manual-create-user.ts",
     "test-super-admin": "ts-node scripts/test-super-admin-limit.ts",
     "create-role-permissions": "ts-node scripts/create-role-permissions-table.ts",
     "manage-permissions": "ts-node scripts/manage-permissions.ts",
-    "test-permissions": "ts-node scripts/test-permissions.ts"
+    "test-permissions": "ts-node scripts/test-permissions.ts",
+    "fresh-setup": "bash scripts/setup-fresh-deployment.sh",
+    "quick-start": "bash scripts/quick-start.sh",
+    "deploy": "bash scripts/deploy-production.sh"
   },
   "keywords": [
     "email",
@@ -26,7 +29,7 @@
     "jwt",
     "permissions"
   ],
-  "author": "",
+  "author": "Codesan",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.13.1",

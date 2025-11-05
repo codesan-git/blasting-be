@@ -31,10 +31,16 @@ export const apiLogger = (
         typeof req.body === "object" &&
         Object.keys(req.body).length > 0;
 
+      // Extract user info from request (set by authenticate middleware)
+      const userId = req.user?.userId;
+      const userEmail = req.user?.email;
+
       DatabaseService.logAPI({
         endpoint: req.path,
         method: req.method,
         ip_address: req.ip,
+        user_id: userId,
+        user_email: userEmail,
         request_body: hasRequestBody ? JSON.stringify(req.body) : undefined,
         response_status: responseStatus,
         response_time_ms: responseTime,
