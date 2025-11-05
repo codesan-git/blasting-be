@@ -12,6 +12,8 @@ services:
       - ./data:/app/data
       - ./backups:/app/backups
     restart: unless-stopped
+    networks:
+      - application_network
 
   redis:
     image: redis:7-alpine
@@ -21,6 +23,12 @@ services:
     volumes:
       - redis-data:/data
     restart: unless-stopped
+    networks:
+      - application_network
 
 volumes:
   redis-data:
+
+networks:
+  application_network:
+    external: true
