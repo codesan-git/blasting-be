@@ -1,4 +1,4 @@
-// src/controllers/message.controller.ts
+// src/controllers/message.controller.ts - IMPROVED WITH COMPREHENSIVE VALIDATION
 import { Request, Response } from "express";
 import { addBulkMessagesToQueue } from "../queues/message.queue";
 import {
@@ -15,6 +15,14 @@ import { TemplateService } from "../services/template.service";
 import DatabaseService from "../services/database.service";
 import logger from "../utils/logger";
 import ResponseHelper from "../utils/api-response.helper";
+import { ValidationError } from "../types/api-response.types";
+
+// Validation helper untuk recipient
+interface RecipientValidationError {
+  recipientIndex: number;
+  recipientName?: string;
+  errors: ValidationError[];
+}
 
 export const sendMessageBlast = async (
   req: Request,
@@ -29,68 +37,289 @@ export const sendMessageBlast = async (
       from,
     }: SendMessageRequest = req.body;
 
-    // Validasi input
+    // ===== STEP 1: Basic Input Validation =====
+    const validationErrors: ValidationError[] = [];
+
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
-      ResponseHelper.error(
-        res,
-        "Recipients array is required and cannot be empty"
-      );
-      return;
+      validationErrors.push({
+        field: "recipients",
+        message: "Recipients array is required and cannot be empty",
+      });
     }
 
     if (!channels || !Array.isArray(channels) || channels.length === 0) {
-      ResponseHelper.error(
-        res,
-        'Channels array is required. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]'
-      );
+      validationErrors.push({
+        field: "channels",
+        message:
+          'Channels array is required. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]',
+      });
+    }
+
+    if (!templateId) {
+      validationErrors.push({
+        field: "templateId",
+        message: "Template ID is required",
+      });
+    }
+
+    // Return early if basic validation fails
+    if (validationErrors.length > 0) {
+      ResponseHelper.validationError(res, validationErrors);
       return;
     }
 
-    // Validate channels
+    // ===== STEP 2: Validate Channels =====
     const validChannels = ["email", "whatsapp", "sms", "push"];
     const invalidChannels = channels.filter(
       (ch) => !validChannels.includes(ch)
     );
 
     if (invalidChannels.length > 0) {
-      ResponseHelper.error(
-        res,
-        `Invalid channels: ${invalidChannels.join(
+      validationErrors.push({
+        field: "channels",
+        message: `Invalid channels: ${invalidChannels.join(
           ", "
-        )}. Valid channels: ${validChannels.join(", ")}`
+        )}. Valid channels: ${validChannels.join(", ")}`,
+      });
+      ResponseHelper.validationError(res, validationErrors);
+      return;
+    }
+
+    // ===== STEP 3: Get and Validate Template =====
+    const template = TemplateService.getTemplateById(templateId);
+    if (!template) {
+      ResponseHelper.notFound(
+        res,
+        `Template with ID '${templateId}' not found`
       );
       return;
     }
 
-    if (!templateId) {
-      ResponseHelper.error(res, "Template ID is required");
+    // Check if email sending requires 'from' address
+    if (channels.includes("email") && !from) {
+      validationErrors.push({
+        field: "from",
+        message: "From email address is required when sending emails",
+      });
+      ResponseHelper.validationError(res, validationErrors);
       return;
     }
 
-    // Get template
-    const template = TemplateService.getTemplateById(templateId);
-    if (!template) {
-      ResponseHelper.error(res, `Template with ID '${templateId}' not found`);
-      return;
-    }
-
-    // Validate channel compatibility
+    // ===== STEP 4: Validate Channel Compatibility =====
     const incompatibleChannels = channels.filter(
       (ch) => !template.channels.includes(ch as ChannelType)
     );
 
     if (incompatibleChannels.length > 0) {
-      ResponseHelper.error(
-        res,
-        `Template '${
+      validationErrors.push({
+        field: "channels",
+        message: `Template '${
           template.name
         }' is only available for channels: ${template.channels.join(
           ", "
-        )}. You requested: ${channels.join(", ")}`
+        )}. You requested: ${channels.join(", ")}`,
+      });
+      ResponseHelper.validationError(res, validationErrors);
+      return;
+    }
+
+    // ===== STEP 5: Validate Each Recipient =====
+    const recipientValidationErrors: RecipientValidationError[] = [];
+
+    recipients.forEach((recipient, index) => {
+      const recipientErrors: ValidationError[] = [];
+
+      // First, merge variables to get complete picture
+      const mergedVariables: TemplateVariable = {
+        ...globalVariables,
+        ...recipient.variables,
+        name: recipient.name || "",
+        email: recipient.email || "",
+        phone: recipient.phone || "",
+      };
+
+      // Check basic recipient fields only if template requires them OR channel needs them
+      const templateNeedsName = template.variableRequirements?.some(
+        (req) => req.name === "name" && req.required
+      );
+      const templateNeedsEmail = template.variableRequirements?.some(
+        (req) => req.name === "email" && req.required
+      );
+      const templateNeedsPhone = template.variableRequirements?.some(
+        (req) => req.name === "phone" && req.required
+      );
+
+      // Validate name (only if not already handled by template requirements)
+      if (
+        !templateNeedsName &&
+        (!recipient.name || recipient.name.trim() === "")
+      ) {
+        recipientErrors.push({
+          field: `recipients[${index}].name`,
+          message: "Recipient name is required for logging purposes",
+        });
+      }
+
+      // Check channel-specific requirements (only if not handled by template)
+      if (channels.includes("email")) {
+        if (
+          !templateNeedsEmail &&
+          (!recipient.email || recipient.email.trim() === "")
+        ) {
+          recipientErrors.push({
+            field: `recipients[${index}].email`,
+            message: "Email is required when email channel is selected",
+          });
+        } else if (recipient.email && !recipient.email.includes("@")) {
+          recipientErrors.push({
+            field: `recipients[${index}].email`,
+            message: "Invalid email format",
+          });
+        }
+      }
+
+      if (channels.includes("whatsapp")) {
+        if (
+          !templateNeedsPhone &&
+          (!recipient.phone || recipient.phone.trim() === "")
+        ) {
+          recipientErrors.push({
+            field: `recipients[${index}].phone`,
+            message:
+              "Phone number is required when WhatsApp channel is selected",
+          });
+        }
+      }
+
+      // ===== STEP 6: Validate Variables Against Template Requirements =====
+      if (template.variableRequirements) {
+        template.variableRequirements.forEach((req) => {
+          const value = mergedVariables[req.name];
+
+          // Determine where the variable should come from
+          const isInGlobal = globalVariables && req.name in globalVariables;
+          const isInRecipientVars =
+            recipient.variables && req.name in recipient.variables;
+          const isBasicField = ["name", "email", "phone"].includes(req.name);
+
+          // Check if required variable is missing
+          if (
+            req.required &&
+            (value === undefined || value === null || value === "")
+          ) {
+            let fieldPath = "";
+            let detailedMessage = "";
+
+            // Determine the most appropriate field path and message
+            if (isBasicField) {
+              // If it's a basic field like name, email, phone
+              fieldPath = `recipients[${index}].${req.name}`;
+              detailedMessage = `Missing required field: '${req.name}' (${req.description})`;
+            } else if (isInRecipientVars) {
+              // Variable exists in recipient.variables but is empty
+              fieldPath = `recipients[${index}].variables.${req.name}`;
+              detailedMessage = `Variable '${req.name}' is empty (${req.description})`;
+            } else if (!isInGlobal) {
+              // Not in global, not in recipient - completely missing
+              fieldPath = `recipients[${index}].variables.${req.name}`;
+              detailedMessage = `Missing required variable: '${req.name}' (${req.description}). Add it to recipient variables or globalVariables.`;
+            } else {
+              // In global but somehow empty (edge case)
+              fieldPath = `globalVariables.${req.name}`;
+              detailedMessage = `Variable '${req.name}' in globalVariables is empty (${req.description})`;
+            }
+
+            recipientErrors.push({
+              field: fieldPath,
+              message: detailedMessage,
+              code: "MISSING_REQUIRED_VARIABLE",
+            });
+            return;
+          }
+
+          // Skip type validation if variable is not provided and not required
+          if (!req.required && (value === undefined || value === null)) {
+            return;
+          }
+
+          // Type validation
+          switch (req.type) {
+            case "email":
+              if (typeof value === "string" && !value.includes("@")) {
+                recipientErrors.push({
+                  field: `recipients[${index}].variables.${req.name}`,
+                  message: `Invalid email format for '${req.name}': ${value}`,
+                  code: "INVALID_EMAIL_FORMAT",
+                });
+              }
+              break;
+            case "phone":
+              if (typeof value === "string" && !/^\+?[\d\s-]+$/.test(value)) {
+                recipientErrors.push({
+                  field: `recipients[${index}].variables.${req.name}`,
+                  message: `Invalid phone format for '${req.name}': ${value}`,
+                  code: "INVALID_PHONE_FORMAT",
+                });
+              }
+              break;
+            case "number":
+              if (typeof value !== "number" && isNaN(Number(value))) {
+                recipientErrors.push({
+                  field: `recipients[${index}].variables.${req.name}`,
+                  message: `Variable '${req.name}' must be a number, got: ${value}`,
+                  code: "INVALID_NUMBER_FORMAT",
+                });
+              }
+              break;
+            case "string":
+              if (typeof value !== "string" && typeof value !== "number") {
+                recipientErrors.push({
+                  field: `recipients[${index}].variables.${req.name}`,
+                  message: `Variable '${
+                    req.name
+                  }' must be a string, got: ${typeof value}`,
+                  code: "INVALID_STRING_FORMAT",
+                });
+              }
+              break;
+          }
+        });
+      }
+
+      // If this recipient has errors, add to the list
+      if (recipientErrors.length > 0) {
+        recipientValidationErrors.push({
+          recipientIndex: index,
+          recipientName: recipient.name,
+          errors: recipientErrors,
+        });
+      }
+    });
+
+    // ===== STEP 7: Return All Validation Errors =====
+    if (recipientValidationErrors.length > 0) {
+      // Flatten all recipient errors into a single array
+      const allErrors = recipientValidationErrors.flatMap(
+        (recipientError) => recipientError.errors
+      );
+
+      logger.warn("Message blast validation failed", {
+        templateId,
+        totalRecipients: recipients.length,
+        recipientsWithErrors: recipientValidationErrors.length,
+        totalErrors: allErrors.length,
+        errorDetails: recipientValidationErrors,
+      });
+
+      ResponseHelper.validationError(
+        res,
+        allErrors,
+        `Validation failed for ${recipientValidationErrors.length} recipient(s). Please check all fields.`
       );
       return;
     }
 
+    // ===== STEP 8: Process Valid Recipients =====
     const messageJobs: MessageJobData[] = [];
     const jobMetadata: Array<{
       channel: string;
@@ -99,9 +328,8 @@ export const sendMessageBlast = async (
       templateName: string;
     }> = [];
 
-    // Process each recipient
     for (const recipient of recipients) {
-      // Merge all variables: globalVariables + recipient.variables + recipient info
+      // Merge all variables
       const variables: TemplateVariable = {
         ...globalVariables,
         ...recipient.variables,
@@ -117,14 +345,6 @@ export const sendMessageBlast = async (
 
       for (const selectedChannel of channels) {
         if (selectedChannel === "email" && recipient.email) {
-          if (!from) {
-            ResponseHelper.error(
-              res,
-              "From email is required when sending emails"
-            );
-            return;
-          }
-
           const rendered = TemplateService.renderTemplate(template, variables);
 
           logger.debug("Rendered email template", {
@@ -140,7 +360,7 @@ export const sendMessageBlast = async (
             },
             subject: rendered.subject || "No Subject",
             body: rendered.body,
-            from,
+            from: from!,
             channel: ChannelType.EMAIL,
           };
 
@@ -218,14 +438,14 @@ export const sendMessageBlast = async (
     }
 
     if (messageJobs.length === 0) {
-      ResponseHelper.error(
+      ResponseHelper.badRequest(
         res,
         "No valid recipients found for the selected channel(s). Make sure recipients have required contact info (email/phone)."
       );
       return;
     }
 
-    // Add to queue
+    // ===== STEP 9: Queue Messages =====
     const jobIds = await addBulkMessagesToQueue(messageJobs);
 
     // Log to database - initial queued status
@@ -262,14 +482,17 @@ export const sendMessageBlast = async (
 
     logger.info("Message blast initiated", {
       totalMessages: messageJobs.length,
+      totalRecipients: recipients.length,
       channels: channels,
       templateId,
       templateName: template.name,
       qiscusEnabled: !!template.qiscusConfig,
+      important: true,
     });
 
     const data = {
       totalMessages: messageJobs.length,
+      totalRecipients: recipients.length,
       channels: channels,
       template: {
         id: template.id,
@@ -279,10 +502,16 @@ export const sendMessageBlast = async (
       },
       jobIds,
     };
+
     ResponseHelper.success(res, data, "Message blast queued successfully");
   } catch (error) {
     logger.error("Error in sendMessageBlast:", error);
-    ResponseHelper.error(res, `Failed to queue message blast: ${error}`);
+    ResponseHelper.internalError(
+      res,
+      `Failed to queue message blast: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
 };
 
@@ -315,6 +544,11 @@ export const getQueueStats = async (
     );
   } catch (error) {
     logger.error("Error getting queue stats:", error);
-    ResponseHelper.error(res, `Failed to get queue statistics: ${error}`);
+    ResponseHelper.internalError(
+      res,
+      `Failed to get queue statistics: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
 };
