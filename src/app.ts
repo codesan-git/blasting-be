@@ -23,6 +23,7 @@ import permissionRoutes from "./routes/permission.routes";
 import ResponseHelper from "./utils/api-response.helper";
 
 const app: Application = express();
+app.enable("trust proxy");
 
 // Middleware
 app.use(express.json());
