@@ -4,14 +4,14 @@ import ResponseHelper from "../utils/api-response.helper";
 
 // General API rate limiter
 export const apiLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000"), // 15 minutes default
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "1000"), // 100 requests per windowMs
+  windowMs: 60 * 1000, // 1 minute
+  max: 1000, // Max 1000 requests per minute
   message: {
     success: false,
     message: "Too many requests from this IP, please try again later.",
   },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  standardHeaders: true,
+  legacyHeaders: false,
   handler: (req, res) => {
     logger.warn("Rate limit exceeded", {
       ip: req.ip,
@@ -27,10 +27,10 @@ export const apiLimiter = rateLimit({
   },
 });
 
-// Stricter rate limiter for message blast endpoints
+// Blast endpoint rate limiter
 export const blastLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 1000,
+  max: 1000, // Max 1000 requests per minute
   message: {
     success: false,
     message: "Too many blast requests. Please wait before sending more.",
@@ -46,17 +46,17 @@ export const blastLimiter = rateLimit({
     });
     ResponseHelper.error(
       res,
-      `Too many blast requests. Maximum 10 requests per minute. ${res.getHeader(
+      `Too many blast requests. Maximum 1000 requests per minute. ${res.getHeader(
         "RateLimit-Reset"
       )}`
     );
   },
 });
 
-// Template management rate limiter (less strict)
+// Template management rate limiter
 export const templateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // Max 30 requests per minute
+  max: 1000, // Max 1000 requests per minute
   message: {
     success: false,
     message: "Too many template requests.",
