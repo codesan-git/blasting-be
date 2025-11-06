@@ -24,6 +24,37 @@ import ResponseHelper from "./utils/api-response.helper";
 
 const app: Application = express();
 
+if (process.env.NODE_ENV !== "production") {
+  (async () => {
+    const { ExpressAdapter } = await import("@bull-board/express");
+    const { createBullBoard } = await import("@bull-board/api");
+    const { BullMQAdapter } = await import("@bull-board/api/bullMQAdapter");
+    const { messageQueue } = await import("./queues/message.queue");
+    const expressBasicAuth = await import("express-basic-auth");
+
+    const serverAdapter = new ExpressAdapter();
+    serverAdapter.setBasePath("/admin/queues");
+
+    createBullBoard({
+      queues: [new BullMQAdapter(messageQueue)],
+      serverAdapter,
+    });
+
+    app.use(
+      "/admin/queues",
+      expressBasicAuth.default({
+        users: {
+          [process.env.BULLBOARD_USER || "admin"]:
+            process.env.BULLBOARD_PASS || "secret",
+        },
+        challenge: true,
+      }),
+      serverAdapter.getRouter()
+    );
+    console.log("🚀 Bull Board aktif di mode development: /admin/queues");
+  })();
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
