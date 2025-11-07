@@ -1,4 +1,4 @@
-// src/services/backup.service.ts
+// src/services/backup.service.ts - PostgreSQL Version
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
@@ -6,7 +6,6 @@ import logger from "../utils/logger";
 
 /**
  * Get Jakarta timestamp for backup filename
- * Format: 2025-11-02_14-30-45
  */
 const getJakartaTimestamp = (): string => {
   const now = new Date();
@@ -21,7 +20,6 @@ const getJakartaTimestamp = (): string => {
     hour12: false,
   });
 
-  // Convert "11/02/2025, 14:30:45" to "2025-11-02_14-30-45"
   return jakartaTime.replace(
     /(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/,
     "$3-$1-$2_$4-$5-$6"
@@ -30,13 +28,22 @@ const getJakartaTimestamp = (): string => {
 
 class BackupService {
   private backupDir: string;
-  private dbPath: string;
   private maxBackups: number;
+  private pgHost: string;
+  private pgPort: string;
+  private pgUser: string;
+  private pgPassword: string;
+  private pgDatabase: string;
 
   constructor() {
-    this.dbPath = path.join(process.cwd(), "data", "logs.db");
     this.backupDir = path.join(process.cwd(), "backups");
     this.maxBackups = parseInt(process.env.MAX_BACKUPS || "30", 10);
+
+    this.pgHost = process.env.POSTGRES_HOST || "localhost";
+    this.pgPort = process.env.POSTGRES_PORT || "5432";
+    this.pgUser = process.env.POSTGRES_USER || "";
+    this.pgPassword = process.env.POSTGRES_PASSWORD || "";
+    this.pgDatabase = process.env.POSTGRES_DB || "";
 
     // Create backup directory if not exists
     if (!fs.existsSync(this.backupDir)) {
@@ -46,26 +53,26 @@ class BackupService {
   }
 
   /**
-   * Create a backup of the database
+   * Create a backup using pg_dump
    */
   backup(): { success: boolean; backupPath?: string; error?: string } {
     try {
-      // Generate backup filename with Jakarta timezone timestamp
       const timestamp = getJakartaTimestamp();
-      const backupFilename = `logs_backup_${timestamp}.db`;
+      const backupFilename = `postgres_backup_${timestamp}.sql`;
       const backupPath = path.join(this.backupDir, backupFilename);
 
-      // Check if source database exists
-      if (!fs.existsSync(this.dbPath)) {
-        logger.error("Database file not found", { path: this.dbPath });
-        return {
-          success: false,
-          error: "Database file not found",
-        };
-      }
+      logger.info("Starting PostgreSQL backup...", { important: true });
 
-      // Copy database file
-      fs.copyFileSync(this.dbPath, backupPath);
+      // Set PGPASSWORD environment variable for authentication
+      const env = {
+        ...process.env,
+        PGPASSWORD: this.pgPassword,
+      };
+
+      // Execute pg_dump
+      const command = `pg_dump -h ${this.pgHost} -p ${this.pgPort} -U ${this.pgUser} -d ${this.pgDatabase} -F p -f "${backupPath}"`;
+
+      execSync(command, { env });
 
       // Verify backup
       const stats = fs.statSync(backupPath);
@@ -74,7 +81,7 @@ class BackupService {
         throw new Error("Backup file is empty");
       }
 
-      logger.info("Database backup created successfully", {
+      logger.info("PostgreSQL backup created successfully", {
         backupPath,
         size: `${(stats.size / 1024 / 1024).toFixed(2)} MB`,
         important: true,
@@ -88,7 +95,7 @@ class BackupService {
         backupPath,
       };
     } catch (error) {
-      logger.error("Failed to create database backup", {
+      logger.error("Failed to create PostgreSQL backup", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
 
@@ -100,7 +107,7 @@ class BackupService {
   }
 
   /**
-   * Create compressed backup (gzip)
+   * Create compressed backup using pg_dump with gzip
    */
   backupCompressed(): {
     success: boolean;
@@ -108,24 +115,26 @@ class BackupService {
     error?: string;
   } {
     try {
-      // Generate backup filename with Jakarta timezone timestamp
       const timestamp = getJakartaTimestamp();
-      const backupFilename = `logs_backup_${timestamp}.db.gz`;
+      const backupFilename = `postgres_backup_${timestamp}.sql.gz`;
       const backupPath = path.join(this.backupDir, backupFilename);
 
-      // Check if source database exists
-      if (!fs.existsSync(this.dbPath)) {
-        return {
-          success: false,
-          error: "Database file not found",
-        };
-      }
+      logger.info("Starting compressed PostgreSQL backup...", {
+        important: true,
+      });
 
-      // Use gzip to compress (requires gzip installed on system)
-      execSync(`gzip -c "${this.dbPath}" > "${backupPath}"`);
+      const env = {
+        ...process.env,
+        PGPASSWORD: this.pgPassword,
+      };
+
+      // Execute pg_dump with gzip compression
+      const command = `pg_dump -h ${this.pgHost} -p ${this.pgPort} -U ${this.pgUser} -d ${this.pgDatabase} -F p | gzip > "${backupPath}"`;
+
+      execSync(command, { env, shell: "/bin/bash" });
 
       const stats = fs.statSync(backupPath);
-      logger.info("Compressed database backup created", {
+      logger.info("Compressed PostgreSQL backup created", {
         backupPath,
         size: `${(stats.size / 1024 / 1024).toFixed(2)} MB`,
         important: true,
@@ -150,7 +159,7 @@ class BackupService {
   }
 
   /**
-   * Restore database from backup
+   * Restore database from backup using psql
    */
   restore(backupFilename: string): { success: boolean; error?: string } {
     try {
@@ -164,25 +173,35 @@ class BackupService {
         };
       }
 
-      // Create a backup of current database before restoring
-      const currentBackupPath = path.join(
-        this.backupDir,
-        `logs_before_restore_${getJakartaTimestamp()}.db`
-      );
-      if (fs.existsSync(this.dbPath)) {
-        fs.copyFileSync(this.dbPath, currentBackupPath);
-        logger.info("Current database backed up before restore", {
-          path: currentBackupPath,
-        });
+      logger.warn("Starting database restore...", {
+        from: backupPath,
+        important: true,
+      });
+
+      const env = {
+        ...process.env,
+        PGPASSWORD: this.pgPassword,
+      };
+
+      // Drop existing connections (optional, be careful in production!)
+      try {
+        execSync(
+          `psql -h ${this.pgHost} -p ${this.pgPort} -U ${this.pgUser} -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${this.pgDatabase}' AND pid <> pg_backend_pid();"`,
+          { env }
+        );
+      } catch (e) {
+        // Ignore error if no connections to drop
       }
 
-      // Restore backup
+      // Restore database
       if (backupFilename.endsWith(".gz")) {
         // Decompress and restore
-        execSync(`gunzip -c "${backupPath}" > "${this.dbPath}"`);
+        const command = `gunzip -c "${backupPath}" | psql -h ${this.pgHost} -p ${this.pgPort} -U ${this.pgUser} -d ${this.pgDatabase}`;
+        execSync(command, { env, shell: "/bin/bash" });
       } else {
-        // Direct copy
-        fs.copyFileSync(backupPath, this.dbPath);
+        // Direct restore
+        const command = `psql -h ${this.pgHost} -p ${this.pgPort} -U ${this.pgUser} -d ${this.pgDatabase} -f "${backupPath}"`;
+        execSync(command, { env });
       }
 
       logger.info("Database restored successfully", {
@@ -221,8 +240,8 @@ class BackupService {
       const backups = files
         .filter(
           (f) =>
-            f.startsWith("logs_backup_") &&
-            (f.endsWith(".db") || f.endsWith(".db.gz"))
+            f.startsWith("postgres_backup_") &&
+            (f.endsWith(".sql") || f.endsWith(".sql.gz"))
         )
         .map((filename) => {
           const filePath = path.join(this.backupDir, filename);
@@ -235,7 +254,7 @@ class BackupService {
             compressed: filename.endsWith(".gz"),
           };
         })
-        .sort((a, b) => b.created.localeCompare(a.created)); // Newest first
+        .sort((a, b) => b.created.localeCompare(a.created));
 
       return backups;
     } catch (error) {
@@ -257,7 +276,6 @@ class BackupService {
         return;
       }
 
-      // Delete oldest backups
       const toDelete = backups.slice(this.maxBackups);
       toDelete.forEach((backup) => {
         const filePath = path.join(this.backupDir, backup.filename);
@@ -294,7 +312,6 @@ class BackupService {
       };
     }
 
-    // Calculate total size
     const totalBytes = backups.reduce((sum, backup) => {
       const sizeInMB = parseFloat(backup.size.replace(" MB", ""));
       return sum + sizeInMB * 1024 * 1024;

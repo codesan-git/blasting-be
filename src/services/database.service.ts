@@ -1,119 +1,198 @@
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
+// src/services/database.service.ts - PostgreSQL Version
+import { Pool } from "pg";
 import { RefreshToken, User, UserRole } from "../types/auth.types";
 
-const DB_PATH = path.join(process.cwd(), "data", "logs.db");
+// PostgreSQL connection pool
+const pool = new Pool({
+  host: process.env.POSTGRES_HOST || "localhost",
+  port: parseInt(process.env.POSTGRES_PORT || "5432"),
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB,
+  ssl:
+    process.env.POSTGRES_SSL === "true" ? { rejectUnauthorized: false } : false,
+  max: parseInt(process.env.POSTGRES_MAX_CONNECTIONS || "20"),
+  idleTimeoutMillis: parseInt(process.env.POSTGRES_IDLE_TIMEOUT || "30000"),
+  connectionTimeoutMillis: parseInt(
+    process.env.POSTGRES_CONNECTION_TIMEOUT || "5000"
+  ),
+});
 
-// Ensure data directory exists
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// Set default schema if specified
+const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA;
+if (POSTGRES_SCHEMA) {
+  pool.on("connect", async (client) => {
+    await client.query(`SET search_path TO ${POSTGRES_SCHEMA}, public`);
+  });
 }
 
-const db = new Database(DB_PATH);
-
-// Enable WAL mode for better concurrent access
-db.pragma("journal_mode = WAL");
-
 // Helper function to get Jakarta time
-const getJakartaTime = (): string => {
-  return new Date()
-    .toLocaleString("en-US", {
-      timeZone: "Asia/Jakarta",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    })
-    .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, "$3-$1-$2 $4:$5:$6");
+// const getJakartaTime = (): string => {
+//   return new Date()
+//     .toLocaleString("en-US", {
+//       timeZone: "Asia/Jakarta",
+//       year: "numeric",
+//       month: "2-digit",
+//       day: "2-digit",
+//       hour: "2-digit",
+//       minute: "2-digit",
+//       second: "2-digit",
+//       hour12: false,
+//     })
+//     .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, "$3-$1-$2 $4:$5:$6");
+// };
+
+// Initialize database tables
+const initDatabase = async () => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Set schema if specified
+    if (POSTGRES_SCHEMA) {
+      await client.query(`SET search_path TO ${POSTGRES_SCHEMA}, public`);
+    }
+
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(255) PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        roles JSONB NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        last_login_at TIMESTAMP
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+      CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
+    `);
+
+    // Create refresh_tokens table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        is_revoked BOOLEAN DEFAULT false
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_revoked ON refresh_tokens(is_revoked);
+    `);
+
+    // Create message_logs table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS message_logs (
+        id SERIAL PRIMARY KEY,
+        job_id VARCHAR(255) NOT NULL,
+        channel VARCHAR(50) NOT NULL,
+        recipient_email VARCHAR(255),
+        recipient_phone VARCHAR(50),
+        recipient_name VARCHAR(255) NOT NULL,
+        template_id VARCHAR(255) NOT NULL,
+        template_name VARCHAR(255),
+        subject TEXT,
+        status VARCHAR(50) NOT NULL,
+        error_message TEXT,
+        message_id VARCHAR(255),
+        attempts INTEGER DEFAULT 1,
+        created_by VARCHAR(255),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_job_id ON message_logs(job_id);
+      CREATE INDEX IF NOT EXISTS idx_status ON message_logs(status);
+      CREATE INDEX IF NOT EXISTS idx_channel ON message_logs(channel);
+      CREATE INDEX IF NOT EXISTS idx_recipient_email ON message_logs(recipient_email);
+      CREATE INDEX IF NOT EXISTS idx_message_id ON message_logs(message_id);
+      CREATE INDEX IF NOT EXISTS idx_created_at ON message_logs(created_at);
+    `);
+
+    // Create api_logs table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS api_logs (
+        id SERIAL PRIMARY KEY,
+        endpoint VARCHAR(255) NOT NULL,
+        method VARCHAR(10) NOT NULL,
+        ip_address VARCHAR(50),
+        user_id VARCHAR(255),
+        user_email VARCHAR(255),
+        request_body TEXT,
+        response_status INTEGER,
+        response_time_ms INTEGER,
+        error_message TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_api_endpoint ON api_logs(endpoint);
+      CREATE INDEX IF NOT EXISTS idx_api_created_at ON api_logs(created_at);
+    `);
+
+    // Create system_logs table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS system_logs (
+        id SERIAL PRIMARY KEY,
+        level VARCHAR(20) NOT NULL,
+        message TEXT NOT NULL,
+        metadata JSONB,
+        user_id VARCHAR(255),
+        user_email VARCHAR(255),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_system_level ON system_logs(level);
+      CREATE INDEX IF NOT EXISTS idx_system_created_at ON system_logs(created_at);
+    `);
+
+    // Create role_permissions table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS role_permissions (
+        id SERIAL PRIMARY KEY,
+        role VARCHAR(100) NOT NULL,
+        permission VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        created_by VARCHAR(255),
+        UNIQUE(role, permission)
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role);
+      CREATE INDEX IF NOT EXISTS idx_role_permissions_permission ON role_permissions(permission);
+    `);
+
+    await client.query("COMMIT");
+    console.log("✅ PostgreSQL database initialized successfully");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("❌ Failed to initialize database:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
-// Create tables with explicit timezone handling
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    name TEXT NOT NULL,
-    roles TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    last_login_at TEXT
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-  CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
-
-  CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    token TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    is_revoked BOOLEAN DEFAULT false,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
-  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_revoked ON refresh_tokens(is_revoked);
-
-  CREATE TABLE IF NOT EXISTS message_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_id TEXT NOT NULL,
-    channel TEXT NOT NULL,
-    recipient_email TEXT,
-    recipient_phone TEXT,
-    recipient_name TEXT NOT NULL,
-    template_id TEXT NOT NULL,
-    template_name TEXT,
-    subject TEXT,
-    status TEXT NOT NULL,
-    error_message TEXT,
-    message_id TEXT,
-    attempts INTEGER DEFAULT 1,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_job_id ON message_logs(job_id);
-  CREATE INDEX IF NOT EXISTS idx_status ON message_logs(status);
-  CREATE INDEX IF NOT EXISTS idx_channel ON message_logs(channel);
-  CREATE INDEX IF NOT EXISTS idx_recipient_email ON message_logs(recipient_email);
-  CREATE INDEX IF NOT EXISTS idx_message_id ON message_logs(message_id);
-  CREATE INDEX IF NOT EXISTS idx_created_at ON message_logs(created_at);
-
-  CREATE TABLE IF NOT EXISTS api_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    endpoint TEXT NOT NULL,
-    method TEXT NOT NULL,
-    ip_address TEXT,
-    request_body TEXT,
-    response_status INTEGER,
-    response_time_ms INTEGER,
-    error_message TEXT,
-    created_at TEXT NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_api_endpoint ON api_logs(endpoint);
-  CREATE INDEX IF NOT EXISTS idx_api_created_at ON api_logs(created_at);
-
-  CREATE TABLE IF NOT EXISTS system_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    level TEXT NOT NULL,
-    message TEXT NOT NULL,
-    metadata TEXT,
-    created_at TEXT NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_system_level ON system_logs(level);
-  CREATE INDEX IF NOT EXISTS idx_system_created_at ON system_logs(created_at);
-`);
+// Initialize on import
+initDatabase().catch(console.error);
 
 export interface MessageLog {
   id?: number;
@@ -171,267 +250,160 @@ export interface MessageStatsByDateRow {
   count: number;
 }
 
-export interface FormattedStats {
-  email: StatusCounts;
-  whatsapp: StatusCounts;
-  total: StatusCounts;
-}
-
-interface StatusCounts {
-  queued: number;
-  processing: number;
-  sent: number;
-  failed: number;
-}
-
 export class DatabaseService {
   /**
    * Get all permissions for a role
    */
-  static getRolePermissions(role: string): string[] {
-    const stmt = db.prepare(`
-    SELECT permission FROM role_permissions 
-    WHERE role = ?
-    ORDER BY permission
-  `);
-
-    const rows = stmt.all(role) as { permission: string }[];
-    return rows.map((row) => row.permission);
+  static async getRolePermissions(role: string): Promise<string[]> {
+    const result = await pool.query(
+      `SELECT permission FROM role_permissions WHERE role = $1 ORDER BY permission`,
+      [role]
+    );
+    return result.rows.map((row) => row.permission);
   }
 
   /**
    * Get permissions for multiple roles (combined)
    */
-  static getRolesPermissions(roles: string[]): string[] {
+  static async getRolesPermissions(roles: string[]): Promise<string[]> {
     if (roles.length === 0) return [];
 
-    const placeholders = roles.map(() => "?").join(",");
-    const stmt = db.prepare(`
-    SELECT DISTINCT permission FROM role_permissions 
-    WHERE role IN (${placeholders})
-    ORDER BY permission
-  `);
-
-    const rows = stmt.all(...roles) as { permission: string }[];
-    return rows.map((row) => row.permission);
+    const result = await pool.query(
+      `SELECT DISTINCT permission FROM role_permissions 
+       WHERE role = ANY($1) ORDER BY permission`,
+      [roles]
+    );
+    return result.rows.map((row) => row.permission);
   }
 
   /**
    * Add permission to role
    */
-  static addRolePermission(
+  static async addRolePermission(
     role: string,
     permission: string,
     createdBy?: string
-  ): boolean {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-    INSERT OR IGNORE INTO role_permissions (role, permission, created_at, created_by)
-    VALUES (?, ?, ?, ?)
-  `);
-
-    const result = stmt.run(role, permission, jakartaTime, createdBy || null);
-    return result.changes > 0;
+  ): Promise<boolean> {
+    try {
+      const result = await pool.query(
+        `INSERT INTO role_permissions (role, permission, created_at, created_by)
+         VALUES ($1, $2, NOW(), $3)
+         ON CONFLICT (role, permission) DO NOTHING
+         RETURNING id`,
+        [role, permission, createdBy || null]
+      );
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error("Error adding role permission:", error);
+      return false;
+    }
   }
 
   /**
    * Remove permission from role
    */
-  static removeRolePermission(role: string, permission: string): boolean {
-    const stmt = db.prepare(`
-    DELETE FROM role_permissions 
-    WHERE role = ? AND permission = ?
-  `);
-
-    const result = stmt.run(role, permission);
-    return result.changes > 0;
+  static async removeRolePermission(
+    role: string,
+    permission: string
+  ): Promise<boolean> {
+    const result = await pool.query(
+      `DELETE FROM role_permissions WHERE role = $1 AND permission = $2`,
+      [role, permission]
+    );
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   /**
    * Set all permissions for a role (replace existing)
    */
-  static setRolePermissions(
+  static async setRolePermissions(
     role: string,
     permissions: string[],
     createdBy?: string
-  ): boolean {
+  ): Promise<boolean> {
+    const client = await pool.connect();
+
     try {
-      const jakartaTime = getJakartaTime();
+      await client.query("BEGIN");
 
       // Delete existing permissions for role
-      db.prepare(`DELETE FROM role_permissions WHERE role = ?`).run(role);
+      await client.query(`DELETE FROM role_permissions WHERE role = $1`, [
+        role,
+      ]);
 
       // Insert new permissions
-      const stmt = db.prepare(`
-      INSERT INTO role_permissions (role, permission, created_at, created_by)
-      VALUES (?, ?, ?, ?)
-    `);
+      for (const permission of permissions) {
+        await client.query(
+          `INSERT INTO role_permissions (role, permission, created_at, created_by)
+           VALUES ($1, $2, NOW(), $3)`,
+          [role, permission, createdBy || null]
+        );
+      }
 
-      permissions.forEach((permission) => {
-        stmt.run(role, permission, jakartaTime, createdBy || null);
-      });
-
+      await client.query("COMMIT");
       return true;
     } catch (error) {
+      await client.query("ROLLBACK");
       console.error("Error setting role permissions:", error);
       return false;
+    } finally {
+      client.release();
     }
   }
 
   /**
    * Get all roles with their permissions
    */
-  static getAllRolePermissions(): Record<string, string[]> {
-    const stmt = db.prepare(`
-    SELECT role, permission FROM role_permissions 
-    ORDER BY role, permission
-  `);
+  static async getAllRolePermissions(): Promise<Record<string, string[]>> {
+    const result = await pool.query(
+      `SELECT role, permission FROM role_permissions ORDER BY role, permission`
+    );
 
-    const rows = stmt.all() as { role: string; permission: string }[];
-
-    const result: Record<string, string[]> = {};
-
-    rows.forEach(({ role, permission }) => {
-      if (!result[role]) {
-        result[role] = [];
+    const rolePermissions: Record<string, string[]> = {};
+    result.rows.forEach(({ role, permission }) => {
+      if (!rolePermissions[role]) {
+        rolePermissions[role] = [];
       }
-      result[role].push(permission);
+      rolePermissions[role].push(permission);
     });
 
-    return result;
-  }
-
-  /**
-   * Check if role has permission
-   */
-  static roleHasPermission(role: string, permission: string): boolean {
-    const stmt = db.prepare(`
-    SELECT COUNT(*) as count FROM role_permissions 
-    WHERE role = ? AND permission = ?
-  `);
-
-    const result = stmt.get(role, permission) as { count: number };
-    return result.count > 0;
-  }
-
-  /**
-   * Check if user (with multiple roles) has permission
-   */
-  static userHasPermission(roles: string[], permission: string): boolean {
-    if (roles.length === 0) return false;
-
-    const placeholders = roles.map(() => "?").join(",");
-    const stmt = db.prepare(`
-    SELECT COUNT(*) as count FROM role_permissions 
-    WHERE role IN (${placeholders}) AND permission = ?
-  `);
-
-    const result = stmt.get(...roles, permission) as { count: number };
-    return result.count > 0;
-  }
-
-  /**
-   * Get permission usage stats
-   */
-  static getPermissionStats(): Array<{
-    permission: string;
-    roleCount: number;
-    roles: string;
-  }> {
-    const stmt = db.prepare(`
-    SELECT 
-      permission,
-      COUNT(*) as roleCount,
-      GROUP_CONCAT(role) as roles
-    FROM role_permissions
-    GROUP BY permission
-    ORDER BY roleCount DESC, permission
-  `);
-
-    return stmt.all() as Array<{
-      permission: string;
-      roleCount: number;
-      roles: string;
-    }>;
+    return rolePermissions;
   }
 
   /**
    * Count super admin users
    */
-  static countSuperAdmins(): number {
-    const stmt = db.prepare(`
-    SELECT COUNT(*) as count 
-    FROM users 
-    WHERE is_active = 1
-  `);
-
-    const allUsers = stmt.get() as { count: number };
-
-    // Get all active users and check their roles
-    const activeUsers = this.getAllUsers().filter((user) => user.is_active);
-
-    // Count users with super_admin role
-    const superAdminCount = activeUsers.filter((user) =>
-      user.roles.includes(UserRole.SUPER_ADMIN)
-    ).length;
-
-    return superAdminCount;
-  }
-
-  /**
-   * Get all super admin users
-   */
-  static getSuperAdmins(): any[] {
-    const allUsers = this.getAllUsers();
-
-    return allUsers.filter(
-      (user) => user.is_active && user.roles.includes(UserRole.SUPER_ADMIN)
+  static async countSuperAdmins(): Promise<number> {
+    const result = await pool.query(
+      `SELECT COUNT(*) as count FROM users 
+       WHERE is_active = true AND roles @> $1`,
+      [JSON.stringify([UserRole.SUPER_ADMIN])]
     );
-  }
-
-  /**
-   * Check if user has super admin role
-   */
-  static isSuperAdmin(userId: string): boolean {
-    const user = this.getUserById(userId);
-
-    if (!user || !user.is_active) {
-      return false;
-    }
-
-    return user.roles.includes(UserRole.SUPER_ADMIN);
+    return parseInt(result.rows[0].count);
   }
 
   /**
    * Create a new user
    */
-  static createUser(data: {
+  static async createUser(data: {
     email: string;
     password: string;
     name: string;
     roles: UserRole[];
-  }): string {
-    const jakartaTime = getJakartaTime();
+  }): Promise<string> {
     const id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const stmt = db.prepare(`
-      INSERT INTO users (id, email, password, name, roles, is_active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    // Convert roles array to JSON string
-    const rolesJson = JSON.stringify(data.roles);
-
-    stmt.run(
-      id,
-      data.email,
-      data.password,
-      data.name,
-      rolesJson, // This is now a JSON string
-      1, // SQLite uses 1/0 for boolean
-      jakartaTime,
-      jakartaTime
+    await pool.query(
+      `INSERT INTO users (id, email, password, name, roles, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
+      [
+        id,
+        data.email,
+        data.password,
+        data.name,
+        JSON.stringify(data.roles),
+        true,
+      ]
     );
 
     return id;
@@ -440,57 +412,53 @@ export class DatabaseService {
   /**
    * Get user by ID
    */
-  static getUserById(id: string): User | null {
-    const stmt = db.prepare(`SELECT * FROM users WHERE id = ?`);
-    const row = stmt.get(id) as any;
+  static async getUserById(id: string): Promise<User | null> {
+    const result = await pool.query(`SELECT * FROM users WHERE id = $1`, [id]);
 
-    if (!row) return null;
+    if (result.rows.length === 0) return null;
 
+    const row = result.rows[0];
     return {
       ...row,
-      roles: JSON.parse(row.roles),
-      is_active: Boolean(row.is_active),
+      roles: row.roles, // PostgreSQL JSONB automatically parsed
     };
   }
 
   /**
    * Get user by email
    */
-  static getUserByEmail(email: string): User | null {
-    const stmt = db.prepare(`SELECT * FROM users WHERE email = ?`);
-    const row = stmt.get(email) as any;
+  static async getUserByEmail(email: string): Promise<User | null> {
+    const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [
+      email,
+    ]);
 
-    if (!row) return null;
+    if (result.rows.length === 0) return null;
 
+    const row = result.rows[0];
     return {
       ...row,
-      roles: JSON.parse(row.roles),
-      is_active: Boolean(row.is_active),
+      roles: row.roles,
     };
   }
 
   /**
    * Get all users
    */
-  static getAllUsers(): User[] {
-    const stmt = db.prepare(`
-      SELECT * FROM users 
-      ORDER BY created_at DESC
-    `);
+  static async getAllUsers(): Promise<User[]> {
+    const result = await pool.query(
+      `SELECT * FROM users ORDER BY created_at DESC`
+    );
 
-    const rows = stmt.all() as any[];
-
-    return rows.map((row) => ({
+    return result.rows.map((row) => ({
       ...row,
-      roles: JSON.parse(row.roles),
-      is_active: Boolean(row.is_active),
+      roles: row.roles,
     }));
   }
 
   /**
    * Update user
    */
-  static updateUser(
+  static async updateUser(
     id: string,
     data: {
       email?: string;
@@ -498,106 +466,91 @@ export class DatabaseService {
       roles?: UserRole[];
       is_active?: boolean;
     }
-  ): boolean {
-    const jakartaTime = getJakartaTime();
-    const user = this.getUserById(id);
-
-    if (!user) return false;
-
+  ): Promise<boolean> {
     const updates: string[] = [];
     const values: any[] = [];
+    let paramIndex = 1;
 
     if (data.email !== undefined) {
-      updates.push("email = ?");
+      updates.push(`email = $${paramIndex++}`);
       values.push(data.email);
     }
 
     if (data.name !== undefined) {
-      updates.push("name = ?");
+      updates.push(`name = $${paramIndex++}`);
       values.push(data.name);
     }
 
     if (data.roles !== undefined) {
-      updates.push("roles = ?");
+      updates.push(`roles = $${paramIndex++}`);
       values.push(JSON.stringify(data.roles));
     }
 
     if (data.is_active !== undefined) {
-      updates.push("is_active = ?");
+      updates.push(`is_active = $${paramIndex++}`);
       values.push(data.is_active);
     }
 
     if (updates.length === 0) return false;
 
-    updates.push("updated_at = ?");
-    values.push(jakartaTime);
+    updates.push(`updated_at = NOW()`);
     values.push(id);
 
-    const stmt = db.prepare(`
-      UPDATE users 
-      SET ${updates.join(", ")}
-      WHERE id = ?
-    `);
+    const result = await pool.query(
+      `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex}`,
+      values
+    );
 
-    stmt.run(...values);
-    return true;
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   /**
    * Update user password
    */
-  static updateUserPassword(id: string, hashedPassword: string): boolean {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-      UPDATE users 
-      SET password = ?, updated_at = ?
-      WHERE id = ?
-    `);
-
-    const result = stmt.run(hashedPassword, jakartaTime, id);
-    return result.changes > 0;
+  static async updateUserPassword(
+    id: string,
+    hashedPassword: string
+  ): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2`,
+      [hashedPassword, id]
+    );
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   /**
    * Update last login time
    */
-  static updateLastLogin(id: string): boolean {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-      UPDATE users 
-      SET last_login_at = ?
-      WHERE id = ?
-    `);
-
-    const result = stmt.run(jakartaTime, id);
-    return result.changes > 0;
+  static async updateLastLogin(id: string): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE users SET last_login_at = NOW() WHERE id = $1`,
+      [id]
+    );
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   /**
    * Delete user
    */
-  static deleteUser(id: string): boolean {
-    // First revoke all refresh tokens
-    this.revokeAllUserRefreshTokens(id);
+  static async deleteUser(id: string): Promise<boolean> {
+    // Revoke all refresh tokens first
+    await this.revokeAllUserRefreshTokens(id);
 
-    const stmt = db.prepare(`DELETE FROM users WHERE id = ?`);
-    const result = stmt.run(id);
-    return result.changes > 0;
+    const result = await pool.query(`DELETE FROM users WHERE id = $1`, [id]);
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   /**
    * Deactivate user (soft delete)
    */
-  static deactivateUser(id: string): boolean {
+  static async deactivateUser(id: string): Promise<boolean> {
     return this.updateUser(id, { is_active: false });
   }
 
   /**
    * Activate user
    */
-  static activateUser(id: string): boolean {
+  static async activateUser(id: string): Promise<boolean> {
     return this.updateUser(id, { is_active: true });
   }
 
@@ -608,463 +561,423 @@ export class DatabaseService {
   /**
    * Create refresh token
    */
-  static createRefreshToken(data: {
+  static async createRefreshToken(data: {
     user_id: string;
     token: string;
     expires_at: string;
-  }): string {
-    const jakartaTime = getJakartaTime();
+  }): Promise<string> {
     const id = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const stmt = db.prepare(`
-      INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, is_revoked)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
+    await pool.query(
+      `INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, is_revoked)
+       VALUES ($1, $2, $3, $4, NOW(), false)`,
+      [id, data.user_id, data.token, data.expires_at]
+    );
 
-    stmt.run(id, data.user_id, data.token, data.expires_at, jakartaTime, 0);
     return id;
   }
 
   /**
    * Get valid (non-revoked, non-expired) refresh tokens
    */
-  static getValidRefreshTokens(): RefreshToken[] {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-      SELECT * FROM refresh_tokens 
-      WHERE is_revoked = 0 
-        AND expires_at > ?
-      ORDER BY created_at DESC
-    `);
-
-    return stmt.all(jakartaTime) as RefreshToken[];
-  }
-
-  /**
-   * Get user's refresh tokens
-   */
-  static getUserRefreshTokens(userId: string): RefreshToken[] {
-    const stmt = db.prepare(`
-      SELECT * FROM refresh_tokens 
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-    `);
-
-    return stmt.all(userId) as RefreshToken[];
+  static async getValidRefreshTokens(): Promise<RefreshToken[]> {
+    const result = await pool.query(
+      `SELECT * FROM refresh_tokens 
+       WHERE is_revoked = false AND expires_at > NOW()
+       ORDER BY created_at DESC`
+    );
+    return result.rows;
   }
 
   /**
    * Revoke refresh token by ID
    */
-  static revokeRefreshToken(id: string): boolean {
-    const stmt = db.prepare(`
-      UPDATE refresh_tokens 
-      SET is_revoked = 1 
-      WHERE id = ?
-    `);
-
-    const result = stmt.run(id);
-    return result.changes > 0;
+  static async revokeRefreshToken(id: string): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE refresh_tokens SET is_revoked = true WHERE id = $1`,
+      [id]
+    );
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   /**
    * Revoke all refresh tokens for a user
    */
-  static revokeAllUserRefreshTokens(userId: string): number {
-    const stmt = db.prepare(`
-      UPDATE refresh_tokens 
-      SET is_revoked = true 
-      WHERE user_id = ? AND is_revoked = false
-    `);
-
-    const result = stmt.run(userId);
-    return result.changes;
-  }
-
-  /**
-   * Clean up expired refresh tokens
-   */
-  static cleanupExpiredRefreshTokens(): number {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-      DELETE FROM refresh_tokens 
-      WHERE expires_at < ? OR is_revoked = true
-    `);
-
-    const result = stmt.run(jakartaTime);
-    return result.changes;
+  static async revokeAllUserRefreshTokens(userId: string): Promise<number> {
+    const result = await pool.query(
+      `UPDATE refresh_tokens SET is_revoked = true 
+       WHERE user_id = $1 AND is_revoked = false`,
+      [userId]
+    );
+    return result.rowCount || 0;
   }
 
   /**
    * Log message with user tracking
    */
-  static logMessage(data: MessageLog): number {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-    INSERT INTO message_logs (
-      job_id, channel, recipient_email, recipient_phone, recipient_name,
-      template_id, template_name, subject, status, error_message, message_id, attempts,
-      created_by, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-    const result = stmt.run(
-      data.job_id,
-      data.channel,
-      data.recipient_email || null,
-      data.recipient_phone || null,
-      data.recipient_name,
-      data.template_id,
-      data.template_name || null,
-      data.subject || null,
-      data.status,
-      data.error_message || null,
-      data.message_id || null,
-      data.attempts || 1,
-      data.created_by || null,
-      jakartaTime,
-      jakartaTime
+  static async logMessage(data: MessageLog): Promise<number> {
+    const result = await pool.query(
+      `INSERT INTO message_logs (
+        job_id, channel, recipient_email, recipient_phone, recipient_name,
+        template_id, template_name, subject, status, error_message, message_id, attempts,
+        created_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      RETURNING id`,
+      [
+        data.job_id,
+        data.channel,
+        data.recipient_email || null,
+        data.recipient_phone || null,
+        data.recipient_name,
+        data.template_id,
+        data.template_name || null,
+        data.subject || null,
+        data.status,
+        data.error_message || null,
+        data.message_id || null,
+        data.attempts || 1,
+        data.created_by || null,
+      ]
     );
 
-    return result.lastInsertRowid as number;
+    return result.rows[0].id;
   }
 
-  static updateMessageStatus(
+  /**
+   * Update message status
+   */
+  static async updateMessageStatus(
     jobId: string,
     status: string,
     errorMessage?: string,
     messageId?: string,
     attempts?: number
-  ): void {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-      UPDATE message_logs 
-      SET status = ?, error_message = ?, message_id = ?, attempts = ?, updated_at = ?
-      WHERE job_id = ?
-    `);
-
-    stmt.run(
-      status,
-      errorMessage || null,
-      messageId || null,
-      attempts || 1,
-      jakartaTime,
-      jobId
+  ): Promise<void> {
+    await pool.query(
+      `UPDATE message_logs 
+       SET status = $1, error_message = $2, message_id = $3, attempts = $4, updated_at = NOW()
+       WHERE job_id = $5`,
+      [status, errorMessage || null, messageId || null, attempts || 1, jobId]
     );
   }
 
   /**
    * Update message status by message_id (for webhook updates)
    */
-  static updateMessageStatusByMessageId(
+  static async updateMessageStatusByMessageId(
     messageId: string,
     status: string,
     errorMessage?: string
-  ): void {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-      UPDATE message_logs 
-      SET status = ?, error_message = ?, updated_at = ?
-      WHERE message_id = ?
-    `);
-
-    const result = stmt.run(
-      status,
-      errorMessage || null,
-      jakartaTime,
-      messageId
+  ): Promise<void> {
+    await pool.query(
+      `UPDATE message_logs 
+       SET status = $1, error_message = $2, updated_at = NOW()
+       WHERE message_id = $3`,
+      [status, errorMessage || null, messageId]
     );
-
-    if (result.changes === 0) {
-      console.warn(`No message found with message_id: ${messageId}`);
-    }
   }
 
   /**
    * Get message log by message_id
    */
-  static getMessageByMessageId(messageId: string): MessageLog | null {
-    const stmt = db.prepare(`
-      SELECT * FROM message_logs WHERE message_id = ? LIMIT 1
-    `);
-
-    return stmt.get(messageId) as MessageLog | null;
+  static async getMessageByMessageId(
+    messageId: string
+  ): Promise<MessageLog | null> {
+    const result = await pool.query(
+      `SELECT * FROM message_logs WHERE message_id = $1 LIMIT 1`,
+      [messageId]
+    );
+    return result.rows[0] || null;
   }
 
-  static getMessageLogs(filters?: {
+  /**
+   * Get message logs with filters
+   */
+  static async getMessageLogs(filters?: {
     status?: string;
     channel?: string;
     email?: string;
     limit?: number;
     offset?: number;
-  }): MessageLog[] {
-    let query = "SELECT * FROM message_logs WHERE 1=1";
-    const params: any[] = [];
+  }): Promise<MessageLog[]> {
+    const conditions: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
 
     if (filters?.status) {
-      query += " AND status = ?";
-      params.push(filters.status);
+      conditions.push(`status = $${paramIndex++}`);
+      values.push(filters.status);
     }
 
     if (filters?.channel) {
-      query += " AND channel = ?";
-      params.push(filters.channel);
+      conditions.push(`channel = $${paramIndex++}`);
+      values.push(filters.channel);
     }
 
     if (filters?.email) {
-      query += " AND recipient_email = ?";
-      params.push(filters.email);
+      conditions.push(`recipient_email = $${paramIndex++}`);
+      values.push(filters.email);
     }
 
-    query += " ORDER BY created_at DESC";
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    if (filters?.limit) {
-      query += " LIMIT ?";
-      params.push(filters.limit);
-    }
+    values.push(filters?.limit || 100);
+    values.push(filters?.offset || 0);
 
-    if (filters?.offset) {
-      query += " OFFSET ?";
-      params.push(filters.offset);
-    }
+    const result = await pool.query(
+      `SELECT * FROM message_logs ${whereClause} 
+       ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      values
+    );
 
-    const stmt = db.prepare(query);
-    return stmt.all(...params) as MessageLog[];
+    return result.rows;
   }
 
-  static getMessageStats(): MessageStatRow[] {
-    const stmt = db.prepare(`
-      SELECT 
-        channel,
-        status,
-        COUNT(*) as count
-      FROM message_logs
-      GROUP BY channel, status
-    `);
-
-    return stmt.all() as MessageStatRow[];
+  /**
+   * Get message statistics
+   */
+  static async getMessageStats(): Promise<MessageStatRow[]> {
+    const result = await pool.query(
+      `SELECT channel, status, COUNT(*) as count
+       FROM message_logs
+       GROUP BY channel, status`
+    );
+    return result.rows;
   }
 
-  static getMessageStatsByDate(days: number = 7): MessageStatsByDateRow[] {
-    const stmt = db.prepare(`
-      SELECT 
+  /**
+   * Get message statistics by date
+   */
+  static async getMessageStatsByDate(
+    days: number = 7
+  ): Promise<MessageStatsByDateRow[]> {
+    const result = await pool.query(
+      `SELECT 
         DATE(created_at) as date,
         channel,
         status,
         COUNT(*) as count
-      FROM message_logs
-      WHERE created_at >= datetime('now', '-${days} days', 'localtime')
-      GROUP BY DATE(created_at), channel, status
-      ORDER BY date DESC
-    `);
-
-    return stmt.all() as MessageStatsByDateRow[];
+       FROM message_logs
+       WHERE created_at >= NOW() - INTERVAL '${days} days'
+       GROUP BY DATE(created_at), channel, status
+       ORDER BY date DESC`
+    );
+    return result.rows;
   }
 
   /**
    * Log API request with user tracking
    */
-  static logAPI(data: APILog): number {
-    const jakartaTime = getJakartaTime();
-
-    const stmt = db.prepare(`
-    INSERT INTO api_logs (
-      endpoint, method, ip_address, user_id, user_email,
-      request_body, response_status, response_time_ms, error_message, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-    const result = stmt.run(
-      data.endpoint,
-      data.method,
-      data.ip_address || null,
-      data.user_id || null,
-      data.user_email || null,
-      data.request_body || null,
-      data.response_status || null,
-      data.response_time_ms || null,
-      data.error_message || null,
-      jakartaTime
+  static async logAPI(data: APILog): Promise<number> {
+    const result = await pool.query(
+      `INSERT INTO api_logs (
+        endpoint, method, ip_address, user_id, user_email,
+        request_body, response_status, response_time_ms, error_message, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      RETURNING id`,
+      [
+        data.endpoint,
+        data.method,
+        data.ip_address || null,
+        data.user_id || null,
+        data.user_email || null,
+        data.request_body || null,
+        data.response_status || null,
+        data.response_time_ms || null,
+        data.error_message || null,
+      ]
     );
-
-    return result.lastInsertRowid as number;
+    return result.rows[0].id;
   }
 
   /**
    * Get API logs with user filter
    */
-  static getAPILogs(
+  static async getAPILogs(
     limit: number = 100,
     offset: number = 0,
     userId?: string
-  ): APILog[] {
-    let query = `
-    SELECT * FROM api_logs
-    ${userId ? "WHERE user_id = ?" : ""}
-    ORDER BY created_at DESC 
-    LIMIT ? OFFSET ?
-  `;
+  ): Promise<APILog[]> {
+    const whereClause = userId ? "WHERE user_id = $3" : "";
+    const params = userId ? [limit, offset, userId] : [limit, offset];
 
-    const params = userId ? [userId, limit, offset] : [limit, offset];
-    const stmt = db.prepare(query);
-
-    return stmt.all(...params) as APILog[];
+    const result = await pool.query(
+      `SELECT * FROM api_logs ${whereClause}
+       ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      params
+    );
+    return result.rows;
   }
 
   /**
    * Log system event with user tracking
    */
-  static logSystem(
+  static async logSystem(
     level: string,
     message: string,
     metadata?: Record<string, unknown>
-  ): number {
-    const jakartaTime = getJakartaTime();
-
-    // Extract user info from metadata if exists
+  ): Promise<number> {
     const userId = metadata?.userId as string | undefined;
     const userEmail = metadata?.userEmail as string | undefined;
 
-    const stmt = db.prepare(`
-    INSERT INTO system_logs (level, message, metadata, user_id, user_email, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-
-    const result = stmt.run(
-      level,
-      message,
-      metadata ? JSON.stringify(metadata) : null,
-      userId || null,
-      userEmail || null,
-      jakartaTime
+    const result = await pool.query(
+      `INSERT INTO system_logs (level, message, metadata, user_id, user_email, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       RETURNING id`,
+      [
+        level,
+        message,
+        metadata ? JSON.stringify(metadata) : null,
+        userId || null,
+        userEmail || null,
+      ]
     );
-
-    return result.lastInsertRowid as number;
+    return result.rows[0].id;
   }
 
   /**
-   * Get system logs with user filter
+   * Get system logs with filters
    */
-  static getSystemLogs(
+  static async getSystemLogs(
     level?: string,
     limit: number = 100,
     offset: number = 0,
     userId?: string
-  ): SystemLog[] {
-    let conditions = [];
-    let params: any[] = [];
+  ): Promise<SystemLog[]> {
+    const conditions: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
 
     if (level) {
-      conditions.push("level = ?");
-      params.push(level);
+      conditions.push(`level = $${paramIndex++}`);
+      values.push(level);
     }
 
     if (userId) {
-      conditions.push("user_id = ?");
-      params.push(userId);
+      conditions.push(`user_id = $${paramIndex++}`);
+      values.push(userId);
     }
 
     const whereClause =
       conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-    const query = `
-    SELECT * FROM system_logs
-    ${whereClause}
-    ORDER BY created_at DESC 
-    LIMIT ? OFFSET ?
-  `;
 
-    params.push(limit, offset);
-    const stmt = db.prepare(query);
+    values.push(limit);
+    values.push(offset);
 
-    return stmt.all(...params) as SystemLog[];
+    const result = await pool.query(
+      `SELECT * FROM system_logs ${whereClause}
+       ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      values
+    );
+    return result.rows;
   }
 
   /**
    * Get message logs by user
    */
-  static getMessageLogsByUser(
+  static async getMessageLogsByUser(
     userId: string,
     limit: number = 100,
     offset: number = 0
-  ): MessageLog[] {
-    const stmt = db.prepare(`
-    SELECT * FROM message_logs 
-    WHERE created_by = ?
-    ORDER BY created_at DESC 
-    LIMIT ? OFFSET ?
-  `);
-
-    return stmt.all(userId, limit, offset) as MessageLog[];
+  ): Promise<MessageLog[]> {
+    const result = await pool.query(
+      `SELECT * FROM message_logs 
+       WHERE created_by = $1
+       ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+    return result.rows;
   }
 
   /**
    * Get user activity statistics
    */
-  static getUserActivityStats(userId: string): {
+  static async getUserActivityStats(userId: string): Promise<{
     totalMessages: number;
     totalAPIRequests: number;
     lastActivity: string | null;
     messagesByChannel: Array<{ channel: string; count: number }>;
-  } {
-    // Total messages sent by user
-    const totalMessages = db
-      .prepare(
-        `SELECT COUNT(*) as count FROM message_logs WHERE created_by = ?`
-      )
-      .get(userId) as { count: number };
+  }> {
+    // Total messages
+    const messagesResult = await pool.query(
+      `SELECT COUNT(*) as count FROM message_logs WHERE created_by = $1`,
+      [userId]
+    );
 
-    // Total API requests by user
-    const totalAPIRequests = db
-      .prepare(`SELECT COUNT(*) as count FROM api_logs WHERE user_id = ?`)
-      .get(userId) as { count: number };
+    // Total API requests
+    const apiResult = await pool.query(
+      `SELECT COUNT(*) as count FROM api_logs WHERE user_id = $1`,
+      [userId]
+    );
 
     // Last activity
-    const lastActivity = db
-      .prepare(
-        `SELECT MAX(created_at) as last_activity FROM api_logs WHERE user_id = ?`
-      )
-      .get(userId) as { last_activity: string | null };
+    const activityResult = await pool.query(
+      `SELECT MAX(created_at) as last_activity FROM api_logs WHERE user_id = $1`,
+      [userId]
+    );
 
     // Messages by channel
-    const messagesByChannel = db
-      .prepare(
-        `
-    SELECT channel, COUNT(*) as count 
-    FROM message_logs 
-    WHERE created_by = ?
-    GROUP BY channel
-  `
-      )
-      .all(userId) as Array<{ channel: string; count: number }>;
+    const channelResult = await pool.query(
+      `SELECT channel, COUNT(*) as count 
+       FROM message_logs 
+       WHERE created_by = $1
+       GROUP BY channel`,
+      [userId]
+    );
 
     return {
-      totalMessages: totalMessages.count,
-      totalAPIRequests: totalAPIRequests.count,
-      lastActivity: lastActivity.last_activity,
-      messagesByChannel,
+      totalMessages: parseInt(messagesResult.rows[0].count),
+      totalAPIRequests: parseInt(apiResult.rows[0].count),
+      lastActivity: activityResult.rows[0].last_activity,
+      messagesByChannel: channelResult.rows,
     };
   }
 
-  // Cleanup old logs
-  static cleanupOldLogs(daysToKeep: number = 30): void {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-    const cutoffStr = cutoffDate.toISOString().split("T")[0];
+  /**
+   * Cleanup old logs
+   */
+  static async cleanupOldLogs(daysToKeep: number = 30): Promise<void> {
+    await pool.query(
+      `DELETE FROM message_logs WHERE created_at < NOW() - INTERVAL '${daysToKeep} days'`
+    );
 
-    db.prepare(`DELETE FROM message_logs WHERE created_at < ?`).run(cutoffStr);
+    await pool.query(
+      `DELETE FROM api_logs WHERE created_at < NOW() - INTERVAL '${daysToKeep} days'`
+    );
 
-    db.prepare(`DELETE FROM api_logs WHERE created_at < ?`).run(cutoffStr);
-
-    db.prepare(`DELETE FROM system_logs WHERE created_at < ?`).run(cutoffStr);
+    await pool.query(
+      `DELETE FROM system_logs WHERE created_at < NOW() - INTERVAL '${daysToKeep} days'`
+    );
   }
 
-  static close(): void {
-    db.close();
+  /**
+   * Get permission usage statistics
+   */
+  static async getPermissionStats(): Promise<
+    Array<{
+      permission: string;
+      roleCount: number;
+      roles: string;
+    }>
+  > {
+    const result = await pool.query(
+      `SELECT 
+        permission,
+        COUNT(*) as "roleCount",
+        STRING_AGG(role, ',') as roles
+       FROM role_permissions
+       GROUP BY permission
+       ORDER BY "roleCount" DESC, permission`
+    );
+    return result.rows;
+  }
+
+  /**
+   * Close database connection pool
+   */
+  static async close(): Promise<void> {
+    await pool.end();
   }
 }
 
