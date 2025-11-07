@@ -42,7 +42,7 @@ export const getRolePermissions = async (
   try {
     const { role } = req.params;
 
-    const permissions = DatabaseService.getRolePermissions(role);
+    const permissions = await DatabaseService.getRolePermissions(role);
 
     ResponseHelper.success(res, {
       success: true,
@@ -70,7 +70,7 @@ export const getAllRolePermissions = async (
   res: Response
 ): Promise<void> => {
   try {
-    const rolePermissions = DatabaseService.getAllRolePermissions();
+    const rolePermissions = await DatabaseService.getAllRolePermissions();
 
     ResponseHelper.success(res, {
       success: true,
@@ -112,7 +112,7 @@ export const addRolePermission = async (
     }
 
     // Add permission
-    const success = DatabaseService.addRolePermission(
+    const success = await DatabaseService.addRolePermission(
       role,
       permission,
       req.user?.userId
@@ -225,10 +225,10 @@ export const setRolePermissions = async (
     }
 
     // Get old permissions for logging
-    const oldPermissions = DatabaseService.getRolePermissions(role);
+    const oldPermissions = await DatabaseService.getRolePermissions(role);
 
     // Set new permissions
-    const success = DatabaseService.setRolePermissions(
+    const success = await DatabaseService.setRolePermissions(
       role,
       permissions,
       req.user?.userId
@@ -284,7 +284,7 @@ export const getPermissionStats = async (
   res: Response
 ): Promise<void> => {
   try {
-    const stats = DatabaseService.getPermissionStats();
+    const stats = await DatabaseService.getPermissionStats();
 
     ResponseHelper.success(res, {
       success: true,
