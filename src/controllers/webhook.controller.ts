@@ -138,7 +138,9 @@ async function handleMessageStatus(
     }
 
     // Check if message exists in database
-    const existingMessage = DatabaseService.getMessageByMessageId(message_id);
+    const existingMessage = await DatabaseService.getMessageByMessageId(
+      message_id
+    );
 
     if (!existingMessage) {
       logger.warn("⚠️ Message not found in database", {

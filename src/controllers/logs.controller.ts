@@ -52,7 +52,7 @@ export const getMessageLogs = async (
   try {
     const { status, channel, email, limit = 100, offset = 0 } = req.query;
 
-    const logs: MessageLog[] = DatabaseService.getMessageLogs({
+    const logs: MessageLog[] = await DatabaseService.getMessageLogs({
       status: status as string | undefined,
       channel: channel as string | undefined,
       email: email as string | undefined,
@@ -76,7 +76,7 @@ export const getMessageStats = async (
   res: Response
 ): Promise<void> => {
   try {
-    const stats: MessageStatRow[] = DatabaseService.getMessageStats();
+    const stats: MessageStatRow[] = await DatabaseService.getMessageStats();
 
     // Transform to more readable format
     const formatted: FormattedStats = {
@@ -116,7 +116,7 @@ export const getMessageStatsByDate = async (
     const { days = 7 } = req.query;
 
     const stats: MessageStatsByDateRow[] =
-      DatabaseService.getMessageStatsByDate(parseQueryNumber(days, 7));
+      await DatabaseService.getMessageStatsByDate(parseQueryNumber(days, 7));
 
     ResponseHelper.success(res, {
       success: true,
@@ -135,7 +135,7 @@ export const getAPILogs = async (
   try {
     const { limit = 100, offset = 0 } = req.query;
 
-    const logs: APILog[] = DatabaseService.getAPILogs(
+    const logs: APILog[] = await DatabaseService.getAPILogs(
       parseQueryNumber(limit, 100),
       parseQueryNumber(offset, 0)
     );
@@ -158,7 +158,7 @@ export const getSystemLogs = async (
   try {
     const { level, limit = 100, offset = 0 } = req.query;
 
-    const logs: SystemLog[] = DatabaseService.getSystemLogs(
+    const logs: SystemLog[] = await DatabaseService.getSystemLogs(
       level as string | undefined,
       parseQueryNumber(limit, 100),
       parseQueryNumber(offset, 0)

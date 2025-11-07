@@ -1,4 +1,4 @@
-// src/controllers/auth.controller.ts
+// src/controllers/auth.controller.ts - PostgreSQL Compatible
 import { Request, Response } from "express";
 import authService from "../services/auth.service";
 import DatabaseService from "../services/database.service";
@@ -32,7 +32,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Log successful login
     logger.info("User logged in", {
       userId: result.user?.id,
       email: result.user?.email,
@@ -133,7 +132,7 @@ export const getProfile = async (
       return;
     }
 
-    const user = DatabaseService.getUserById(req.user.userId);
+    const user = await DatabaseService.getUserById(req.user.userId); // ✅ Added await
 
     if (!user) {
       ResponseHelper.error(res, "User not found");
@@ -261,7 +260,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // 🔒 CHECK: Super admin limit
     if (roles.includes(UserRole.SUPER_ADMIN)) {
-      const superAdminCount = DatabaseService.countSuperAdmins();
+      const superAdminCount = await DatabaseService.countSuperAdmins(); // ✅ Added await
       const MAX_SUPER_ADMINS = parseInt(
         process.env.MAX_SUPER_ADMINS || "3",
         10
@@ -347,7 +346,9 @@ export const revokeSessions = async (
       return;
     }
 
-    const count = DatabaseService.revokeAllUserRefreshTokens(req.user.userId);
+    const count = await DatabaseService.revokeAllUserRefreshTokens(
+      req.user.userId
+    ); // ✅ Added await
 
     logger.info("All sessions revoked", {
       userId: req.user.userId,

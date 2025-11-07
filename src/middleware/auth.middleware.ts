@@ -105,7 +105,11 @@ export const requireRole = (roles: UserRole | UserRole[]) => {
  * Usage: requirePermission([Permission.EMAIL_SEND, Permission.WHATSAPP_SEND])
  */
 export const requirePermission = (permissions: Permission | Permission[]) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     if (!req.user) {
       ResponseHelper.error(res, "Authentication required");
       return;
@@ -117,7 +121,9 @@ export const requirePermission = (permissions: Permission | Permission[]) => {
     const userRoles = req.user.roles;
 
     // 🔄 GET PERMISSIONS DYNAMICALLY FROM DATABASE
-    const userPermissions = DatabaseService.getRolesPermissions(userRoles);
+    const userPermissions = await DatabaseService.getRolesPermissions(
+      userRoles
+    );
 
     // Check if user has all required permissions
     const hasAllPermissions = requiredPermissions.every((permission) =>
@@ -154,8 +160,12 @@ export const requirePermission = (permissions: Permission | Permission[]) => {
  * Middleware to check if user has ANY of the required permissions - DYNAMIC from DB
  * Usage: requireAnyPermission([Permission.EMAIL_SEND, Permission.WHATSAPP_SEND])
  */
-export const requireAnyPermission = (permissions: Permission[]) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+export const requireAnyPermission = async (permissions: Permission[]) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     if (!req.user) {
       ResponseHelper.error(res, "Authentication required");
       return;
@@ -164,7 +174,9 @@ export const requireAnyPermission = (permissions: Permission[]) => {
     const userRoles = req.user.roles;
 
     // 🔄 GET PERMISSIONS DYNAMICALLY FROM DATABASE
-    const userPermissions = DatabaseService.getRolesPermissions(userRoles);
+    const userPermissions = await DatabaseService.getRolesPermissions(
+      userRoles
+    );
 
     // Check if user has any of the required permissions
     const hasAnyPermission = permissions.some((permission) =>
@@ -195,18 +207,18 @@ export const requireAnyPermission = (permissions: Permission[]) => {
 /**
  * Middleware to check if user is active
  */
-export const requireActive = (
+export const requireActive = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   if (!req.user) {
     ResponseHelper.error(res, "Authentication required");
     return;
   }
 
   // Check from database
-  const user = DatabaseService.getUserById(req.user.userId);
+  const user = await DatabaseService.getUserById(req.user.userId);
 
   if (!user || !user.is_active) {
     logger.warn("Access denied - user not active", {

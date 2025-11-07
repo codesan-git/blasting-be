@@ -1,4 +1,4 @@
-// src/controllers/user.controller.ts
+// src/controllers/user.controller.ts - PostgreSQL Compatible
 import { Request, Response } from "express";
 import DatabaseService from "../services/database.service";
 import authService from "../services/auth.service";
@@ -19,7 +19,7 @@ export const getAllUsers = async (
   res: Response
 ): Promise<void> => {
   try {
-    const users = DatabaseService.getAllUsers();
+    const users = await DatabaseService.getAllUsers(); // ✅ Added await
 
     // Remove passwords from response
     const usersWithoutPassword = users.map((user) => {
@@ -50,7 +50,7 @@ export const getUserById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id); // ✅ Added await
 
     if (!user) {
       ResponseHelper.error(res, "User not found");
@@ -83,7 +83,7 @@ export const updateUser = async (
     const updates: UpdateUserRequest = req.body;
 
     // Check if user exists
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id); // ✅ Added await
 
     if (!user) {
       ResponseHelper.error(res, "User not found");
@@ -111,7 +111,7 @@ export const updateUser = async (
       const willBeSuperAdmin = updates.roles.includes(UserRole.SUPER_ADMIN);
 
       if (wasNotSuperAdmin && willBeSuperAdmin) {
-        const superAdminCount = DatabaseService.countSuperAdmins();
+        const superAdminCount = await DatabaseService.countSuperAdmins(); // ✅ Added await
         const MAX_SUPER_ADMINS = parseInt(
           process.env.MAX_SUPER_ADMINS || "3",
           10
@@ -141,7 +141,7 @@ export const updateUser = async (
       const willNotBeSuperAdmin = !updates.roles.includes(UserRole.SUPER_ADMIN);
 
       if (wasSuperAdmin && willNotBeSuperAdmin) {
-        const superAdminCount = DatabaseService.countSuperAdmins();
+        const superAdminCount = await DatabaseService.countSuperAdmins(); // ✅ Added await
         const MIN_SUPER_ADMINS = 1;
 
         if (superAdminCount <= MIN_SUPER_ADMINS) {
@@ -165,7 +165,7 @@ export const updateUser = async (
 
     // Check if email already exists (if updating email)
     if (updates.email && updates.email !== user.email) {
-      const existingUser = DatabaseService.getUserByEmail(updates.email);
+      const existingUser = await DatabaseService.getUserByEmail(updates.email); // ✅ Added await
 
       if (existingUser) {
         ResponseHelper.error(res, "Email already exists");
@@ -174,7 +174,7 @@ export const updateUser = async (
     }
 
     // Update user
-    const success = DatabaseService.updateUser(id, updates);
+    const success = await DatabaseService.updateUser(id, updates); // ✅ Added await
 
     if (!success) {
       ResponseHelper.error(res, "Failed to update user");
@@ -182,7 +182,7 @@ export const updateUser = async (
     }
 
     // Get updated user
-    const updatedUser = DatabaseService.getUserById(id);
+    const updatedUser = await DatabaseService.getUserById(id); // ✅ Added await
 
     if (!updatedUser) {
       ResponseHelper.error(res, "Failed to get updated user");
@@ -227,7 +227,7 @@ export const deleteUser = async (
     const { id } = req.params;
 
     // Check if user exists
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id); // ✅ Added await
 
     if (!user) {
       ResponseHelper.error(res, "User not found");
@@ -241,7 +241,7 @@ export const deleteUser = async (
     }
 
     // Delete user
-    const success = DatabaseService.deleteUser(id);
+    const success = await DatabaseService.deleteUser(id); // ✅ Added await
 
     if (!success) {
       ResponseHelper.error(res, "Failed to delete user");
@@ -277,7 +277,7 @@ export const deactivateUser = async (
     const { id } = req.params;
 
     // Check if user exists
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id); // ✅ Added await
 
     if (!user) {
       ResponseHelper.error(res, "User not found");
@@ -291,7 +291,7 @@ export const deactivateUser = async (
     }
 
     // Deactivate user
-    const success = DatabaseService.deactivateUser(id);
+    const success = await DatabaseService.deactivateUser(id); // ✅ Added await
 
     if (!success) {
       ResponseHelper.error(res, "Failed to deactivate user");
@@ -299,7 +299,7 @@ export const deactivateUser = async (
     }
 
     // Revoke all sessions
-    DatabaseService.revokeAllUserRefreshTokens(id);
+    await DatabaseService.revokeAllUserRefreshTokens(id); // ✅ Added await
 
     logger.info("User deactivated", {
       userId: id,
@@ -330,7 +330,7 @@ export const activateUser = async (
     const { id } = req.params;
 
     // Check if user exists
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id); // ✅ Added await
 
     if (!user) {
       ResponseHelper.error(res, "User not found");
@@ -338,7 +338,7 @@ export const activateUser = async (
     }
 
     // Activate user
-    const success = DatabaseService.activateUser(id);
+    const success = await DatabaseService.activateUser(id); // ✅ Added await
 
     if (!success) {
       ResponseHelper.error(res, "Failed to activate user");
@@ -385,7 +385,7 @@ export const resetUserPassword = async (
     }
 
     // Check if user exists
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id); // ✅ Added await
 
     if (!user) {
       ResponseHelper.error(res, "User not found");
@@ -396,7 +396,10 @@ export const resetUserPassword = async (
     const hashedPassword = await authService.hashPassword(newPassword);
 
     // Update password
-    const success = DatabaseService.updateUserPassword(id, hashedPassword);
+    const success = await DatabaseService.updateUserPassword(
+      id,
+      hashedPassword
+    ); // ✅ Added await
 
     if (!success) {
       ResponseHelper.error(res, "Failed to reset password");
@@ -404,7 +407,7 @@ export const resetUserPassword = async (
     }
 
     // Revoke all sessions
-    DatabaseService.revokeAllUserRefreshTokens(id);
+    await DatabaseService.revokeAllUserRefreshTokens(id); // ✅ Added await
 
     logger.info("User password reset", {
       userId: id,

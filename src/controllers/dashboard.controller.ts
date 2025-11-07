@@ -1,4 +1,3 @@
-// src/controllers/dashboard.controller.ts
 import { Request, Response } from "express";
 import DatabaseService, {
   MessageStatRow,
@@ -31,9 +30,9 @@ export const getDashboardStats = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Message stats
-    const messageStats = DatabaseService.getMessageStats();
-    const messageStatsByDate = DatabaseService.getMessageStatsByDate(7);
+    // Message stats - ✅ Added await
+    const messageStats = await DatabaseService.getMessageStats();
+    const messageStatsByDate = await DatabaseService.getMessageStatsByDate(7);
 
     // Queue stats
     const [waiting, active, completed, failed] = await Promise.all([
@@ -50,8 +49,8 @@ export const getDashboardStats = async (
       failed,
     };
 
-    // Recent logs
-    const recentLogs = DatabaseService.getMessageLogs({
+    // Recent logs - ✅ Added await
+    const recentLogs = await DatabaseService.getMessageLogs({
       limit: 10,
       offset: 0,
     });
