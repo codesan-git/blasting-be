@@ -19,7 +19,7 @@ export const getMyActivity = async (
       return;
     }
 
-    const stats = DatabaseService.getUserActivityStats(req.user.userId);
+    const stats = await DatabaseService.getUserActivityStats(req.user.userId);
 
     ResponseHelper.success(res, {
       userId: req.user.userId,
@@ -53,7 +53,7 @@ export const getMyMessages = async (
 
     const { limit = 50, offset = 0 } = req.query;
 
-    const messages = DatabaseService.getMessageLogsByUser(
+    const messages = await DatabaseService.getMessageLogsByUser(
       req.user.userId,
       parseInt(limit as string),
       parseInt(offset as string)
@@ -90,7 +90,7 @@ export const getMyAPILogs = async (
 
     const { limit = 50, offset = 0 } = req.query;
 
-    const logs = DatabaseService.getAPILogs(
+    const logs = await DatabaseService.getAPILogs(
       parseInt(limit as string),
       parseInt(offset as string),
       req.user.userId
@@ -122,7 +122,7 @@ export const getUserActivity = async (
   try {
     const { id } = req.params;
 
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id);
 
     if (!user) {
       ResponseHelper.notFound(res, "User not found");
@@ -160,14 +160,14 @@ export const getUserMessages = async (
     const { id } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
-    const user = DatabaseService.getUserById(id);
+    const user = await DatabaseService.getUserById(id);
 
     if (!user) {
       ResponseHelper.notFound(res, "User not found");
       return;
     }
 
-    const messages = DatabaseService.getMessageLogsByUser(
+    const messages = await DatabaseService.getMessageLogsByUser(
       id,
       parseInt(limit as string),
       parseInt(offset as string)
@@ -199,19 +199,21 @@ export const getAllUsersActivitySummary = async (
   res: Response
 ): Promise<void> => {
   try {
-    const users = DatabaseService.getAllUsers();
+    const users = await DatabaseService.getAllUsers();
 
-    const summary = users.map((user) => {
-      const stats = DatabaseService.getUserActivityStats(user.id);
-      return {
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        roles: user.roles,
-        isActive: user.is_active,
-        ...stats,
-      };
-    });
+    const summary = await Promise.all(
+      users.map(async (user) => {
+        const stats = await DatabaseService.getUserActivityStats(user.id);
+        return {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          roles: user.roles,
+          isActive: user.is_active,
+          ...stats,
+        };
+      })
+    );
 
     // Sort by total activity (messages + API requests)
     summary.sort((a, b) => {

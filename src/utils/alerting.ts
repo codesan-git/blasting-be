@@ -9,8 +9,8 @@ interface ErrorRateInfo {
   timestamp: string;
 }
 
-export const checkErrorRate = (): void => {
-  const stats: MessageStatRow[] = DatabaseService.getMessageStats();
+export const checkErrorRate = async (): Promise<void> => {
+  const stats: MessageStatRow[] = await DatabaseService.getMessageStats();
 
   const failedStat = stats.find((s) => s.status === "failed");
   const failed = failedStat ? failedStat.count : 0;

@@ -84,7 +84,7 @@ class AuthService {
   async verifyRefreshToken(token: string): Promise<User | null> {
     try {
       // Get all non-revoked, non-expired refresh tokens
-      const refreshTokens = DatabaseService.getValidRefreshTokens();
+      const refreshTokens = await DatabaseService.getValidRefreshTokens();
 
       // Find matching token
       for (const rt of refreshTokens) {
@@ -92,7 +92,7 @@ class AuthService {
 
         if (isValid) {
           // Get user
-          const user = DatabaseService.getUserById(rt.user_id);
+          const user = await DatabaseService.getUserById(rt.user_id);
 
           if (user && user.is_active) {
             return user;
@@ -114,13 +114,13 @@ class AuthService {
    */
   async revokeRefreshToken(token: string): Promise<boolean> {
     try {
-      const refreshTokens = DatabaseService.getValidRefreshTokens();
+      const refreshTokens = await DatabaseService.getValidRefreshTokens();
 
       for (const rt of refreshTokens) {
         const isValid = await this.verifyPassword(token, rt.token);
 
         if (isValid) {
-          DatabaseService.revokeRefreshToken(rt.id);
+          await DatabaseService.revokeRefreshToken(rt.id);
           return true;
         }
       }
@@ -140,7 +140,7 @@ class AuthService {
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
       // Get user by email
-      const user = DatabaseService.getUserByEmail(email);
+      const user = await DatabaseService.getUserByEmail(email);
 
       if (!user) {
         return {
@@ -171,7 +171,7 @@ class AuthService {
       }
 
       // Update last login
-      DatabaseService.updateLastLogin(user.id);
+      await DatabaseService.updateLastLogin(user.id);
 
       // Generate tokens
       const accessToken = this.generateAccessToken(user);
@@ -271,7 +271,7 @@ class AuthService {
   ): Promise<User | null> {
     try {
       // Check if email already exists
-      const existingUser = DatabaseService.getUserByEmail(email);
+      const existingUser = await DatabaseService.getUserByEmail(email);
 
       if (existingUser) {
         logger.warn("Attempted to create user with existing email", { email });
@@ -286,7 +286,7 @@ class AuthService {
           10
         );
 
-        if (superAdminCount >= MAX_SUPER_ADMINS) {
+        if ((await superAdminCount) >= MAX_SUPER_ADMINS) {
           logger.warn("Super admin limit reached", {
             currentCount: superAdminCount,
             maxAllowed: MAX_SUPER_ADMINS,
@@ -303,14 +303,14 @@ class AuthService {
       const hashedPassword = await this.hashPassword(password);
 
       // Create user
-      const userId = DatabaseService.createUser({
+      const userId = await DatabaseService.createUser({
         email,
         password: hashedPassword,
         name,
         roles,
       });
 
-      const user = DatabaseService.getUserById(userId);
+      const user = await DatabaseService.getUserById(userId);
 
       logger.info("User created successfully", {
         userId,
@@ -340,7 +340,7 @@ class AuthService {
     newPassword: string
   ): Promise<boolean> {
     try {
-      const user = DatabaseService.getUserById(userId);
+      const user = await DatabaseService.getUserById(userId);
 
       if (!user) {
         return false;
@@ -360,10 +360,10 @@ class AuthService {
       const hashedPassword = await this.hashPassword(newPassword);
 
       // Update password
-      DatabaseService.updateUserPassword(userId, hashedPassword);
+      await DatabaseService.updateUserPassword(userId, hashedPassword);
 
       // Revoke all refresh tokens for this user
-      DatabaseService.revokeAllUserRefreshTokens(userId);
+      await DatabaseService.revokeAllUserRefreshTokens(userId);
 
       logger.info("Password changed successfully", {
         userId,

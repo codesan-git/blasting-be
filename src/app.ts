@@ -261,7 +261,7 @@ app.get(
         0
       );
 
-      const webhookLogs = logs.filter(
+      const webhookLogs = (await logs).filter(
         (log) =>
           log.message.includes("WEBHOOK") ||
           log.message.includes("webhook") ||
