@@ -1,4 +1,3 @@
-// src/config/redis.ts
 import { Redis, RedisOptions } from "ioredis";
 import logger from "../utils/logger";
 
