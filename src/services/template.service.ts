@@ -96,7 +96,7 @@ const defaultTemplates: Template[] = [
   },
   {
     id: "trial_class_payment_success",
-    name: "Pembayaran Trial Class MNS (Multi-Channel)",
+    name: "Pembayaran Trial Class MNS Berhasil",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
     subject: "Pembayaran Trial Class MNS Berhasil",
@@ -249,6 +249,1661 @@ const defaultTemplates: Template[] = [
         "referenceNumber",
         "paymentAmount",
         "paymentDate",
+      ],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "trial_class_attending_confirmation2",
+    name: "Konfirmasi Kehadiran Trial Class MNS",
+    type: TemplateType.REMINDER,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Permintaan Konfirmasi Kehadiran Trial Class MNS",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Terima kasih telah mendaftarkan Ananda <strong>{{name}}</strong> untuk mengikuti Trial Class di MNS.</p>
+      
+      <p>Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> telah tersedia dengan detail berikut:</p>
+      
+      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+          📅 Detail Jadwal Trial Class
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Tanggal:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{trialDate}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Pukul:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{trialTime}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Lokasi:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right;">
+              {{trialLocation}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <p>Silakan melakukan konfirmasi kehadiran melalui tautan berikut:</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{confirmationLink}}" 
+           style="background-color: #28a745; 
+                  color: white; 
+                  padding: 12px 30px; 
+                  text-decoration: none; 
+                  border-radius: 5px; 
+                  display: inline-block;
+                  font-weight: bold;">
+          Konfirmasi Kehadiran
+        </a>
+      </div>
+      
+      <div style="background-color: #fff3cd; 
+                  border-left: 4px solid #ffc107; 
+                  padding: 12px 15px; 
+                  margin: 20px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #856404;">
+          ⚠️ Mohon kesediaannya untuk memberikan konfirmasi kehadiran Ananda paling lambat <strong>{{confirmationDeadline}}</strong> sebelum jadwal yang telah ditentukan.
+        </p>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Sampai bertemu di Trial Class MNS! 🎓✨
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: [
+      "name",
+      "trialDate",
+      "trialTime",
+      "trialLocation",
+      "confirmationDeadline",
+      "confirmationLink",
+    ],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang akan mengikuti trial class",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "trialDate",
+        description: "Tanggal trial class dalam format DD MMM YYYY",
+        required: true,
+        type: "string",
+        example: "25 Desember 2026",
+      },
+      {
+        name: "trialTime",
+        description: "Waktu trial class dengan timezone",
+        required: true,
+        type: "string",
+        example: "16:30 WIB",
+      },
+      {
+        name: "trialLocation",
+        description: "Lokasi lengkap pelaksanaan trial class",
+        required: true,
+        type: "string",
+        example: "Ruang 502, Gedung A lantai 5 MNS",
+      },
+      {
+        name: "confirmationDeadline",
+        description:
+          "Batas waktu konfirmasi kehadiran (relatif terhadap jadwal)",
+        required: true,
+        type: "string",
+        example: "H-2",
+      },
+      {
+        name: "confirmationLink",
+        description: "Link untuk konfirmasi kehadiran trial class",
+        required: true,
+        type: "string",
+        example: "https://ppdb.mns.sch.id/dashboard/trial-class/student-123",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "trial_class_attending_confirmation2",
+      languageCode: "id",
+      bodyVariables: [
+        "name",
+        "trialDate",
+        "trialTime",
+        "trialLocation",
+        "confirmationDeadline",
+      ],
+      buttonVariables: ["confirmationLink"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "trial_class_attending_confirmed",
+    name: "Konfirmasi Kehadiran Trial Class MNS Berhasil",
+    type: TemplateType.NOTIFICATION,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Sukses Konfirmasi Kehadiran Trial Class MNS",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Konfirmasi kehadiran Anda telah kami terima. Berikut detail pelaksanaan Trial Class:</p>
+      
+      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+          📅 Detail Pelaksanaan Trial Class
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Tanggal:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{trialDate}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Pukul:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{trialTime}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Lokasi:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right;">
+              {{trialLocation}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <div style="background-color: #d4edda; 
+                  border-left: 4px solid #28a745; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #155724;">
+          ✅ Kami menantikan kehadiran Ananda di Trial Class Multimedia Nusantara School.
+        </p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: ["name", "trialDate", "trialTime", "trialLocation"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang akan mengikuti trial class",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "trialDate",
+        description: "Tanggal trial class dalam format DD MMM YYYY",
+        required: true,
+        type: "string",
+        example: "25 Desember 2026",
+      },
+      {
+        name: "trialTime",
+        description: "Waktu trial class dengan timezone",
+        required: true,
+        type: "string",
+        example: "16:30 WIB",
+      },
+      {
+        name: "trialLocation",
+        description: "Lokasi lengkap pelaksanaan trial class",
+        required: true,
+        type: "string",
+        example: "Ruang 502, Gedung A lantai 5 MNS",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "trial_class_attending_confirmed",
+      languageCode: "id",
+      bodyVariables: ["name", "trialDate", "trialTime", "trialLocation"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "trial_class_reminder",
+    name: "Reminder Trial Class MNS",
+    type: TemplateType.REMINDER,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Reminder Trial Class MNS",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Kami ingin mengingatkan kembali jika Ananda akan mengikuti pelaksanaan Trial Class dengan rincian sebagai berikut.</p>
+      
+      <div style="background-color: #fff3cd; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #ffc107;">
+        <h3 style="margin-top: 0; color: #856404;">
+          ⏰ Jadwal Trial Class
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
+              <strong>Tanggal:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc; text-align: right;">
+              {{trialDate}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
+              <strong>Pukul:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc; text-align: right;">
+              {{trialTime}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Lokasi:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right;">
+              {{trialLocation}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Jika terdapat kendala, silakan menghubungi kami.
+      </p>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Sampai bertemu di Trial Class Multimedia Nusantara School. 🎓
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: ["name", "trialDate", "trialTime", "trialLocation"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang akan mengikuti trial class",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "trialDate",
+        description: "Tanggal trial class dalam format DD MMM YYYY",
+        required: true,
+        type: "string",
+        example: "25 Desember 2026",
+      },
+      {
+        name: "trialTime",
+        description: "Waktu trial class dengan timezone",
+        required: true,
+        type: "string",
+        example: "16:30 WIB",
+      },
+      {
+        name: "trialLocation",
+        description: "Lokasi lengkap pelaksanaan trial class",
+        required: true,
+        type: "string",
+        example: "Ruang 502, Gedung A lantai 5 MNS",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "trial_class_reminder",
+      languageCode: "id",
+      bodyVariables: ["name", "trialDate", "trialTime", "trialLocation"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "trial_class_on_review",
+    name: "Informasi Laporan Observasi Trial Class MNS",
+    type: TemplateType.NOTIFICATION,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Informasi Laporan Observasi Trial Class MNS",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Trial Class Ananda <strong>{{name}}</strong> telah selesai dilaksanakan.</p>
+      
+      <div style="background-color: #e7f3ff; 
+                  border-left: 4px solid #007bff; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #004085;">
+          📝 Saat ini, tim kami sedang menyiapkan laporan hasil observasi pembelajaran dan perkembangan selama kegiatan berlangsung.
+        </p>
+      </div>
+      
+      <div style="background-color: #fff3cd; 
+                  border-left: 4px solid #ffc107; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #856404;">
+          ⏳ Mohon ditunggu informasinya dalam waktu maksimal <strong>{{deliveryDays}} hari kerja</strong>.
+        </p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: ["name", "deliveryDays"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang telah mengikuti trial class",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "deliveryDays",
+        description:
+          "Jumlah hari kerja maksimal untuk pengiriman laporan observasi",
+        required: true,
+        type: "string",
+        example: "2",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "trial_class_on_review",
+      languageCode: "id",
+      bodyVariables: ["name", "deliveryDays"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "trial_class_student_result",
+    name: "Surat Keputusan dan Hasil Observasi Trial Class MNS",
+    type: TemplateType.NOTIFICATION,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Surat Keputusan dan Hasil Observasi Trial Class MNS",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Observasi Trial Class Ananda <strong>{{name}}</strong> sudah selesai dan hasilnya dapat dilihat pada website PPDB Multimedia Nusantara School.</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{resultLink}}" 
+           style="background-color: #007bff; 
+                  color: white; 
+                  padding: 12px 30px; 
+                  text-decoration: none; 
+                  border-radius: 5px; 
+                  display: inline-block;
+                  font-weight: bold;">
+          Website PPDB MNS
+        </a>
+      </div>
+      
+      <div style="background-color: #e7f3ff; 
+                  border-left: 4px solid #007bff; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #004085;">
+          📄 Orang tua/wali dapat mendownload dan membaca hasil observasi serta surat keputusan berdasarkan hasil observasi tersebut.
+        </p>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Silakan hubungi kami apabila ada pertanyaan lebih lanjut atau ingin berdiskusi mengenai hasil observasi.
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: ["name", "resultLink"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang telah mengikuti trial class",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "resultLink",
+        description:
+          "Link ke halaman hasil observasi dan surat keputusan trial class",
+        required: true,
+        type: "string",
+        example: "https://ppdb.mns.sch.id/dashboard/trial-class/student-123",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "trial_class_student_result",
+      languageCode: "id",
+      bodyVariables: ["name"],
+      buttonVariables: ["resultLink"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "booking_fee_reminder",
+    name: "Informasi Pembayaran Booking Fee MNS",
+    type: TemplateType.REMINDER,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Informasi Pembayaran Booking Fee MNS",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Untuk melanjutkan proses registrasi dan menempatkan Ananda di kelas reguler Multimedia Nusantara School, mohon kesediaannya untuk melakukan pembayaran Booking Fee sebelum <strong>{{paymentDeadline}}</strong></p>
+      
+      <p>Informasi lengkap mengenai tata cara dan metode pembayaran dapat diakses melalui website PPDB MNS dibawah ini.</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{paymentInfoLink}}" 
+           style="background-color: #28a745; 
+                  color: white; 
+                  padding: 12px 30px; 
+                  text-decoration: none; 
+                  border-radius: 5px; 
+                  display: inline-block;
+                  font-weight: bold;">
+          Informasi Pembayaran
+        </a>
+      </div>
+      
+      <div style="background-color: #fff3cd; 
+                  border-left: 4px solid #ffc107; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #856404;">
+          ⚠️ <strong>Penting:</strong> Dimohon untuk melakukan pembayaran booking fee sebelum tanggal jatuh tempo.
+        </p>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut Ananda dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Regards,<br>
+      <strong>Tim Finance Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: ["name", "paymentDeadline", "paymentInfoLink"],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang akan melakukan booking fee",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "paymentDeadline",
+        description: "Batas waktu pembayaran booking fee dengan format lengkap",
+        required: true,
+        type: "string",
+        example: "25-Dec-2026, 16:30 WIB",
+      },
+      {
+        name: "paymentInfoLink",
+        description: "Link ke halaman informasi pembayaran booking fee",
+        required: true,
+        type: "string",
+        example: "https://ppdb.mns.sch.id/dashboard/booking-fee/student-123",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "booking_fee_reminder",
+      languageCode: "id",
+      bodyVariables: ["name", "paymentDeadline"],
+      buttonVariables: ["paymentInfoLink"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "booking_fee_payment_success",
+    name: "Pembayaran Booking Fee MNS Berhasil",
+    type: TemplateType.NOTIFICATION,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Pembayaran Booking Fee MNS Sukses",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Selamat! Pembayaran booking fee untuk pendaftaran Ananda telah berhasil kami terima dengan detail pembayaran sebagai berikut.</p>
+      
+      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+          📋 Rincian Pembayaran
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Status:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              <span style="background-color: #28a745; color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px;">
+                {{paymentStatus}}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Metode Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{paymentMethod}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>No. Referensi:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; font-family: monospace;">
+              {{referenceNumber}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Nominal Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; color: #28a745; font-weight: bold; font-size: 16px;">
+              {{paymentAmount}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Tanggal Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right;">
+              {{paymentDate}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Silahkan melengkapi data Ananda melalui proses Re-enrollment pada website PPDB MNS untuk menyelesaikan proses registrasi.
+      </p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{reenrollmentLink}}" 
+           style="background-color: #007bff; 
+                  color: white; 
+                  padding: 12px 30px; 
+                  text-decoration: none; 
+                  border-radius: 5px; 
+                  display: inline-block;
+                  font-weight: bold;">
+          Re-enrollment
+        </a>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut Ananda dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Regards,<br>
+      <strong>Tim Finance Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: [
+      "name",
+      "paymentStatus",
+      "paymentMethod",
+      "referenceNumber",
+      "paymentAmount",
+      "paymentDate",
+      "reenrollmentLink",
+    ],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang melakukan booking fee",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "paymentStatus",
+        description: "Status pembayaran booking fee",
+        required: true,
+        type: "string",
+        example: "Sukses",
+      },
+      {
+        name: "paymentMethod",
+        description: "Metode pembayaran yang digunakan",
+        required: true,
+        type: "string",
+        example: "VA BCA",
+      },
+      {
+        name: "referenceNumber",
+        description: "Nomor referensi transaksi pembayaran",
+        required: true,
+        type: "string",
+        example: "120293294821339",
+      },
+      {
+        name: "paymentAmount",
+        description: "Nominal pembayaran dengan format currency",
+        required: true,
+        type: "string",
+        example: "Rp3.000.000",
+      },
+      {
+        name: "paymentDate",
+        description: "Tanggal dan waktu pembayaran dengan timezone",
+        required: true,
+        type: "string",
+        example: "06-Nov-25, 14:30 WIB",
+      },
+      {
+        name: "reenrollmentLink",
+        description:
+          "Link ke halaman re-enrollment untuk melengkapi data siswa",
+        required: true,
+        type: "string",
+        example: "https://ppdb.mns.sch.id/dashboard/re-enrollment",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "booking_fee_payment_success",
+      languageCode: "id",
+      bodyVariables: [
+        "name",
+        "paymentStatus",
+        "paymentMethod",
+        "referenceNumber",
+        "paymentAmount",
+        "paymentDate",
+      ],
+      buttonVariables: ["reenrollmentLink"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "reenrollment_reminder",
+    name: "Re-enrollment Multimedia Nusantara School",
+    type: TemplateType.REMINDER,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Re-enrollment Multimedia Nusantara School",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Proses re-enrollment periode <strong>{{academicYear}}</strong> sudah dibuka.</p>
+      
+      <p>Silakan orang tua/wali menyelesaikan proses re-enrollment tersebut dengan cara:</p>
+      
+      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
+          <li style="margin-bottom: 10px;">
+            Melengkapi formulir re-enrollment pada website PPDB MNS sebelum periode berakhir.
+          </li>
+          <li>
+            Melakukan pembayaran Booking Fee sebelum tanggal <strong>{{bookingFeeDeadline}}</strong>.
+          </li>
+        </ol>
+      </div>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ppdbWebsiteLink}}" 
+           style="background-color: #007bff; 
+                  color: white; 
+                  padding: 12px 30px; 
+                  text-decoration: none; 
+                  border-radius: 5px; 
+                  display: inline-block;
+                  font-weight: bold;">
+          Website PPDB MNS
+        </a>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: [
+      "name",
+      "academicYear",
+      "bookingFeeDeadline",
+      "ppdbWebsiteLink",
+    ],
+    variableRequirements: [
+      {
+        name: "name",
+        description:
+          "Nama lengkap anak/siswa yang akan melakukan re-enrollment",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "academicYear",
+        description: "Nama periode/tahun ajaran re-enrollment",
+        required: true,
+        type: "string",
+        example: "2026/2027",
+      },
+      {
+        name: "bookingFeeDeadline",
+        description: "Tanggal jatuh tempo pembayaran booking fee",
+        required: true,
+        type: "string",
+        example: "26 July 2026, 16:30 WIB",
+      },
+      {
+        name: "ppdbWebsiteLink",
+        description: "Link ke website PPDB MNS untuk proses re-enrollment",
+        required: true,
+        type: "string",
+        example: "https://ppdb.mns.sch.id/dashboard/re-enrollment",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "reenrollment_reminder",
+      languageCode: "id",
+      bodyVariables: ["name", "academicYear", "bookingFeeDeadline"],
+      buttonVariables: ["ppdbWebsiteLink"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "reenrollment_successful",
+    name: "Re-enrollment Multimedia Nusantara School Sukses",
+    type: TemplateType.NOTIFICATION,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Re-enrollment Multimedia Nusantara School Sukses",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <div style="background-color: #d4edda; 
+                  border-left: 4px solid #28a745; 
+                  padding: 20px; 
+                  margin: 25px 0;
+                  border-radius: 4px;
+                  text-align: center;">
+        <h3 style="margin: 0 0 10px 0; color: #155724;">
+          🎉 Selamat!
+        </h3>
+        <p style="margin: 0; color: #155724; font-size: 16px; line-height: 1.6;">
+          Proses Re-enrollment Ananda sudah selesai dan sudah kami verifikasi.
+        </p>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Kami mengucapkan terima kasih karena sudah mempercayakan pendidikan Ananda <strong>{{name}}</strong> di Multimedia Nusantara School.
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Regards,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: ["name"],
+    variableRequirements: [
+      {
+        name: "name",
+        description:
+          "Nama lengkap anak/siswa yang telah menyelesaikan re-enrollment",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "reenrollment_successful",
+      languageCode: "id",
+      bodyVariables: ["name"],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "trial_class_booking_fee_payment_success",
+    name: "Pembayaran Trial Class dan Booking Fee MNS Berhasil",
+    type: TemplateType.NOTIFICATION,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Pembayaran Trial Class dan Booking Fee MNS Sukses",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      
+      <p>Kami telah menerima pembayaran tagihan Anda dengan rincian sebagai berikut.</p>
+      
+      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+          📋 Rincian Pembayaran
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Status:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              <span style="background-color: #28a745; color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px;">
+                {{paymentStatus}}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Metode Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{paymentMethod}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>No. Referensi:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; font-family: monospace;">
+              {{referenceNumber}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Nominal Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; color: #28a745; font-weight: bold; font-size: 16px;">
+              {{paymentAmount}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Tanggal Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right;">
+              {{paymentDate}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <div style="background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+          📝 Daftar Tagihan yang Dibayar
+        </h3>
+        <div style="line-height: 1.8;">
+          {{billingList}}
+        </div>
+      </div>
+      
+      <div style="background-color: #e7f3ff; 
+                  border-left: 4px solid #007bff; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #004085;">
+          ℹ️ Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> sedang kami persiapkan. Kami akan segera menginformasikan kembali begitu jadwal tersedia.
+        </p>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Kami sangat menantikan kehadiran Ananda di Trial Class MNS. Sampai jumpa dan rasakan pengalaman belajar yang menyenangkan bersama MNS! 🎓✨
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Admisi Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: [
+      "name",
+      "paymentStatus",
+      "paymentMethod",
+      "referenceNumber",
+      "paymentAmount",
+      "paymentDate",
+      "billingList",
+    ],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa yang melakukan pembayaran",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "paymentStatus",
+        description: "Status pembayaran",
+        required: true,
+        type: "string",
+        example: "Pembayaran Sukses",
+      },
+      {
+        name: "paymentMethod",
+        description: "Metode pembayaran yang digunakan",
+        required: true,
+        type: "string",
+        example: "VA BCA",
+      },
+      {
+        name: "referenceNumber",
+        description: "Nomor referensi transaksi pembayaran",
+        required: true,
+        type: "string",
+        example: "12402039192",
+      },
+      {
+        name: "paymentAmount",
+        description: "Total nominal pembayaran dengan format currency",
+        required: true,
+        type: "string",
+        example: "Rp3.200.000",
+      },
+      {
+        name: "paymentDate",
+        description: "Tanggal dan waktu pembayaran dengan timezone",
+        required: true,
+        type: "string",
+        example: "25 Agustus 2025, 10:30 WIB",
+      },
+      {
+        name: "billingList",
+        description:
+          "Daftar tagihan yang dibayar dalam format list dengan HTML atau plain text",
+        required: true,
+        type: "string",
+        example:
+          "<ol><li>Booking Fee: Rp3.000.000</li><li>Trial Class Fee: Rp200.000</li></ol>",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "trial_class_booking_fee_payment_success",
+      languageCode: "id",
+      bodyVariables: [
+        "name",
+        "paymentStatus",
+        "paymentMethod",
+        "referenceNumber",
+        "paymentAmount",
+        "paymentDate",
+        "billingList",
+      ],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "standard_bill_posting",
+    name: "Informasi Tagihan Multimedia Nusantara School",
+    type: TemplateType.INVOICE,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Informasi Tagihan Multimedia Nusantara School",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
+      
+      <p>Kami sampaikan bahwa saat ini terdapat tagihan baru dengan rincian sebagai berikut.</p>
+      
+      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+          📋 Rincian Tagihan
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Nama Tagihan:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{billName}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Tipe Tagihan:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{billType}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>No. Billing:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; font-family: monospace;">
+              {{billingNumber}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Jumlah:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; color: #dc3545; font-weight: bold; font-size: 16px;">
+              {{billAmount}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Jatuh Tempo:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right; font-weight: bold;">
+              {{dueDate}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <div style="background-color: #fff3cd; 
+                  border-left: 4px solid #ffc107; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #856404;">
+          ⚠️ Orang tua/wali diharapkan untuk melakukan pembayaran tepat waktu sebelum tanggal jatuh tempo.
+        </p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Finance Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: [
+      "name",
+      "studentId",
+      "billName",
+      "billType",
+      "billingNumber",
+      "billAmount",
+      "dueDate",
+    ],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "studentId",
+        description: "Nomor Induk Siswa (NIS)",
+        required: true,
+        type: "string",
+        example: "0250100010",
+      },
+      {
+        name: "billName",
+        description: "Nama tagihan",
+        required: true,
+        type: "string",
+        example: "SPP Januari",
+      },
+      {
+        name: "billType",
+        description: "Tipe/kategori tagihan",
+        required: true,
+        type: "string",
+        example: "SPP",
+      },
+      {
+        name: "billingNumber",
+        description: "Nomor billing/invoice",
+        required: true,
+        type: "string",
+        example: "000121",
+      },
+      {
+        name: "billAmount",
+        description: "Jumlah tagihan dengan format currency",
+        required: true,
+        type: "string",
+        example: "Rp2.150.000",
+      },
+      {
+        name: "dueDate",
+        description: "Tanggal jatuh tempo pembayaran",
+        required: true,
+        type: "string",
+        example: "25-MAR-26, 10:30 WIB",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "standard_bill_posting",
+      languageCode: "id",
+      bodyVariables: [
+        "name",
+        "studentId",
+        "billName",
+        "billType",
+        "billingNumber",
+        "billAmount",
+        "dueDate",
+      ],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "standard_bill_payment_success",
+    name: "Pembayaran Tagihan Multimedia Nusantara School Sukses",
+    type: TemplateType.NOTIFICATION,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Pembayaran Tagihan Multimedia Nusantara School Sukses",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
+      
+      <p>Kami telah menerima pembayaran tagihan Anda dengan rincian sebagai berikut.</p>
+      
+      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+          📋 Rincian Pembayaran
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Status:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              <span style="background-color: #28a745; color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px;">
+                {{paymentStatus}}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Metode Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
+              {{paymentMethod}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>No. Referensi:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; font-family: monospace;">
+              {{referenceNumber}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+              <strong>Nominal Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right; color: #28a745; font-weight: bold; font-size: 16px;">
+              {{paymentAmount}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Tanggal Pembayaran:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right;">
+              {{paymentDate}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <div style="background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+          📝 Daftar Tagihan yang Dibayar
+        </h3>
+        <div style="line-height: 1.8;">
+          {{billingList}}
+        </div>
+      </div>
+      
+      <div style="background-color: #e7f3ff; 
+                  border-left: 4px solid #007bff; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #004085;">
+          ℹ️ Bukti pembayaran ini akan tersimpan dalam sistem kami. Jika Bapak/Ibu membutuhkan salinan atau mengalami kendala, silakan hubungi kami.
+        </p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Finance Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: [
+      "name",
+      "studentId",
+      "paymentStatus",
+      "paymentMethod",
+      "referenceNumber",
+      "paymentAmount",
+      "paymentDate",
+      "billingList",
+    ],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "studentId",
+        description: "Nomor Induk Siswa (NIS)",
+        required: true,
+        type: "string",
+        example: "0250100010",
+      },
+      {
+        name: "paymentStatus",
+        description: "Status pembayaran",
+        required: true,
+        type: "string",
+        example: "Pembayaran Sukses",
+      },
+      {
+        name: "paymentMethod",
+        description: "Metode pembayaran yang digunakan",
+        required: true,
+        type: "string",
+        example: "VA BCA",
+      },
+      {
+        name: "referenceNumber",
+        description: "Nomor referensi transaksi pembayaran",
+        required: true,
+        type: "string",
+        example: "12402039192",
+      },
+      {
+        name: "paymentAmount",
+        description: "Total nominal pembayaran dengan format currency",
+        required: true,
+        type: "string",
+        example: "Rp15.000.000",
+      },
+      {
+        name: "paymentDate",
+        description: "Tanggal dan waktu pembayaran dengan timezone",
+        required: true,
+        type: "string",
+        example: "25-MAR-26, 10:30 WIB",
+      },
+      {
+        name: "billingList",
+        description:
+          "Daftar tagihan yang dibayar dalam format list dengan HTML atau plain text",
+        required: true,
+        type: "string",
+        example:
+          "<ol><li>DPP Januari: Rp10.000.000</li><li>SPP Januari: Rp3.000.000</li><li>Seragam: Rp2.000.000</li></ol>",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "standard_bill_payment_success",
+      languageCode: "id",
+      bodyVariables: [
+        "name",
+        "studentId",
+        "paymentStatus",
+        "paymentMethod",
+        "referenceNumber",
+        "paymentAmount",
+        "paymentDate",
+        "billingList",
+      ],
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "standard_bill_reminder",
+    name: "Reminder Pembayaran Tagihan Multimedia Nusantara School",
+    type: TemplateType.REMINDER,
+    channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
+    subject: "Reminder Pembayaran Tagihan Multimedia Nusantara School",
+    body: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
+      
+      <p>Kami mengingatkan untuk melakukan pembayaran tagihan berikut karena sudah mendekati tanggal jatuh tempo.</p>
+      
+      <div style="background-color: #fff3cd; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #ffc107;">
+        <h3 style="margin-top: 0; color: #856404;">
+          ⚠️ Rincian Tagihan
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
+              <strong>Nama Tagihan:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc; text-align: right;">
+              {{billName}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
+              <strong>Tipe Tagihan:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc; text-align: right;">
+              {{billType}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
+              <strong>No. Billing:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc; text-align: right; font-family: monospace;">
+              {{billingNumber}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
+              <strong>Jumlah:</strong>
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc; text-align: right; color: #dc3545; font-weight: bold; font-size: 16px;">
+              {{billAmount}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">
+              <strong>Jatuh Tempo:</strong>
+            </td>
+            <td style="padding: 10px 0; text-align: right; font-weight: bold; color: #dc3545;">
+              {{dueDate}}
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <div style="background-color: #f8d7da; 
+                  border-left: 4px solid #dc3545; 
+                  padding: 15px; 
+                  margin: 25px 0;
+                  border-radius: 4px;">
+        <p style="margin: 0; color: #721c24;">
+          ⏰ <strong>Penting:</strong> Orang tua/wali diharapkan untuk melakukan pembayaran tepat waktu sebelum tanggal jatuh tempo. Jika terdapat kendala silakan hubungi kami.
+        </p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      
+      <p>Terima kasih,<br>
+      <strong>Tim Finance Multimedia Nusantara School</strong></p>
+      
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
+        <p style="margin: 5px 0;">Hubungi kami melalui:</p>
+        <ul style="list-style: none; padding: 0; margin: 10px 0;">
+          <li style="margin: 5px 0;">📧 Email: <a href="mailto:admission@mns.sch.id">admission@mns.sch.id</a></li>
+          <li style="margin: 5px 0;">📱 WhatsApp: <a href="https://wa.me/6282258880711">+62 822-5888-0711</a></li>
+        </ul>
+      </div>
+    </div>
+  `,
+    variables: [
+      "name",
+      "studentId",
+      "billName",
+      "billType",
+      "billingNumber",
+      "billAmount",
+      "dueDate",
+    ],
+    variableRequirements: [
+      {
+        name: "name",
+        description: "Nama lengkap anak/siswa",
+        required: true,
+        type: "string",
+        example: "John Doe",
+      },
+      {
+        name: "studentId",
+        description: "Nomor Induk Siswa (NIS)",
+        required: true,
+        type: "string",
+        example: "0250100010",
+      },
+      {
+        name: "billName",
+        description: "Nama tagihan",
+        required: true,
+        type: "string",
+        example: "SPP Januari",
+      },
+      {
+        name: "billType",
+        description: "Tipe/kategori tagihan",
+        required: true,
+        type: "string",
+        example: "SPP",
+      },
+      {
+        name: "billingNumber",
+        description: "Nomor billing/invoice",
+        required: true,
+        type: "string",
+        example: "000121",
+      },
+      {
+        name: "billAmount",
+        description: "Jumlah tagihan dengan format currency",
+        required: true,
+        type: "string",
+        example: "Rp2.150.000",
+      },
+      {
+        name: "dueDate",
+        description: "Tanggal jatuh tempo pembayaran",
+        required: true,
+        type: "string",
+        example: "25-MAR-26, 10:30 WIB",
+      },
+    ],
+    qiscusConfig: {
+      namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
+      templateName: "standard_bill_reminder",
+      languageCode: "id",
+      bodyVariables: [
+        "name",
+        "studentId",
+        "billName",
+        "billType",
+        "billingNumber",
+        "billAmount",
+        "dueDate",
       ],
     },
     createdAt: new Date(),
