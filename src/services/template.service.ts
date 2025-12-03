@@ -103,14 +103,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Kami informasikan bahwa pembayaran Trial Class untuk Ananda <strong>{{name}}</strong> telah berhasil kami terima dengan detail sebagai berikut.</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
           📋 Rincian Pembayaran
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
@@ -156,26 +156,26 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
-      <div style="background-color: #e7f3ff; 
-                  border-left: 4px solid #007bff; 
-                  padding: 15px; 
+
+      <div style="background-color: #e7f3ff;
+                  border-left: 4px solid #007bff;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #004085;">
           ℹ️ Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> sedang kami persiapkan. Kami akan segera menginformasikan kembali begitu jadwal tersedia.
         </p>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Kami sangat menantikan kehadiran Ananda di Trial Class MNS. Sampai jumpa dan rasakan pengalaman belajar yang menyenangkan bersama MNS! 🎓✨
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -263,16 +263,16 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Terima kasih telah mendaftarkan Ananda <strong>{{name}}</strong> untuk mengikuti Trial Class di MNS.</p>
-      
+
       <p>Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> telah tersedia dengan detail berikut:</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
           📅 Detail Jadwal Trial Class
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
@@ -300,41 +300,41 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
+
       <p>Silakan melakukan konfirmasi kehadiran melalui tautan berikut:</p>
-      
+
       <div style="text-align: center; margin: 30px 0;">
-        <a href="{{confirmationLink}}" 
-           style="background-color: #28a745; 
-                  color: white; 
-                  padding: 12px 30px; 
-                  text-decoration: none; 
-                  border-radius: 5px; 
+        <a href="{{confirmationLink}}"
+           style="background-color: #28a745;
+                  color: white;
+                  padding: 12px 30px;
+                  text-decoration: none;
+                  border-radius: 5px;
                   display: inline-block;
                   font-weight: bold;">
           Konfirmasi Kehadiran
         </a>
       </div>
-      
-      <div style="background-color: #fff3cd; 
-                  border-left: 4px solid #ffc107; 
-                  padding: 12px 15px; 
+
+      <div style="background-color: #fff3cd;
+                  border-left: 4px solid #ffc107;
+                  padding: 12px 15px;
                   margin: 20px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #856404;">
           ⚠️ Mohon kesediaannya untuk memberikan konfirmasi kehadiran Ananda paling lambat <strong>{{confirmationDeadline}}</strong> sebelum jadwal yang telah ditentukan.
         </p>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Sampai bertemu di Trial Class MNS! 🎓✨
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -423,14 +423,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Konfirmasi kehadiran Anda telah kami terima. Berikut detail pelaksanaan Trial Class:</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
           📅 Detail Pelaksanaan Trial Class
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
@@ -458,22 +458,22 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
-      <div style="background-color: #d4edda; 
-                  border-left: 4px solid #28a745; 
-                  padding: 15px; 
+
+      <div style="background-color: #d4edda;
+                  border-left: 4px solid #28a745;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #155724;">
           ✅ Kami menantikan kehadiran Ananda di Trial Class Multimedia Nusantara School.
         </p>
       </div>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -533,14 +533,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Kami ingin mengingatkan kembali jika Ananda akan mengikuti pelaksanaan Trial Class dengan rincian sebagai berikut.</p>
-      
+
       <div style="background-color: #fff3cd; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #ffc107;">
         <h3 style="margin-top: 0; color: #856404;">
           ⏰ Jadwal Trial Class
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
@@ -568,20 +568,20 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Jika terdapat kendala, silakan menghubungi kami.
       </p>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Sampai bertemu di Trial Class Multimedia Nusantara School. 🎓
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -641,34 +641,34 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Trial Class Ananda <strong>{{name}}</strong> telah selesai dilaksanakan.</p>
-      
-      <div style="background-color: #e7f3ff; 
-                  border-left: 4px solid #007bff; 
-                  padding: 15px; 
+
+      <div style="background-color: #e7f3ff;
+                  border-left: 4px solid #007bff;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #004085;">
           📝 Saat ini, tim kami sedang menyiapkan laporan hasil observasi pembelajaran dan perkembangan selama kegiatan berlangsung.
         </p>
       </div>
-      
-      <div style="background-color: #fff3cd; 
-                  border-left: 4px solid #ffc107; 
-                  padding: 15px; 
+
+      <div style="background-color: #fff3cd;
+                  border-left: 4px solid #ffc107;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #856404;">
           ⏳ Mohon ditunggu informasinya dalam waktu maksimal <strong>{{deliveryDays}} hari kerja</strong>.
         </p>
       </div>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -715,41 +715,41 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Observasi Trial Class Ananda <strong>{{name}}</strong> sudah selesai dan hasilnya dapat dilihat pada website PPDB Multimedia Nusantara School.</p>
-      
+
       <div style="text-align: center; margin: 30px 0;">
-        <a href="{{resultLink}}" 
-           style="background-color: #007bff; 
-                  color: white; 
-                  padding: 12px 30px; 
-                  text-decoration: none; 
-                  border-radius: 5px; 
+        <a href="{{resultLink}}"
+           style="background-color: #007bff;
+                  color: white;
+                  padding: 12px 30px;
+                  text-decoration: none;
+                  border-radius: 5px;
                   display: inline-block;
                   font-weight: bold;">
           Website PPDB MNS
         </a>
       </div>
-      
-      <div style="background-color: #e7f3ff; 
-                  border-left: 4px solid #007bff; 
-                  padding: 15px; 
+
+      <div style="background-color: #e7f3ff;
+                  border-left: 4px solid #007bff;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #004085;">
           📄 Orang tua/wali dapat mendownload dan membaca hasil observasi serta surat keputusan berdasarkan hasil observasi tersebut.
         </p>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Silakan hubungi kami apabila ada pertanyaan lebih lanjut atau ingin berdiskusi mengenai hasil observasi.
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -797,43 +797,43 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Untuk melanjutkan proses registrasi dan menempatkan Ananda di kelas reguler Multimedia Nusantara School, mohon kesediaannya untuk melakukan pembayaran Booking Fee sebelum <strong>{{paymentDeadline}}</strong></p>
-      
+
       <p>Informasi lengkap mengenai tata cara dan metode pembayaran dapat diakses melalui website PPDB MNS dibawah ini.</p>
-      
+
       <div style="text-align: center; margin: 30px 0;">
-        <a href="{{paymentInfoLink}}" 
-           style="background-color: #28a745; 
-                  color: white; 
-                  padding: 12px 30px; 
-                  text-decoration: none; 
-                  border-radius: 5px; 
+        <a href="{{paymentInfoLink}}"
+           style="background-color: #28a745;
+                  color: white;
+                  padding: 12px 30px;
+                  text-decoration: none;
+                  border-radius: 5px;
                   display: inline-block;
                   font-weight: bold;">
           Informasi Pembayaran
         </a>
       </div>
-      
-      <div style="background-color: #fff3cd; 
-                  border-left: 4px solid #ffc107; 
-                  padding: 15px; 
+
+      <div style="background-color: #fff3cd;
+                  border-left: 4px solid #ffc107;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #856404;">
           ⚠️ <strong>Penting:</strong> Dimohon untuk melakukan pembayaran booking fee sebelum tanggal jatuh tempo.
         </p>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut Ananda dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Regards,<br>
       <strong>Tim Finance Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -887,14 +887,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Selamat! Pembayaran booking fee untuk pendaftaran Ananda telah berhasil kami terima dengan detail pembayaran sebagai berikut.</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
           📋 Rincian Pembayaran
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
@@ -940,33 +940,33 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Silahkan melengkapi data Ananda melalui proses Re-enrollment pada website PPDB MNS untuk menyelesaikan proses registrasi.
       </p>
-      
+
       <div style="text-align: center; margin: 30px 0;">
-        <a href="{{reenrollmentLink}}" 
-           style="background-color: #007bff; 
-                  color: white; 
-                  padding: 12px 30px; 
-                  text-decoration: none; 
-                  border-radius: 5px; 
+        <a href="{{reenrollmentLink}}"
+           style="background-color: #007bff;
+                  color: white;
+                  padding: 12px 30px;
+                  text-decoration: none;
+                  border-radius: 5px;
                   display: inline-block;
                   font-weight: bold;">
           Re-enrollment
         </a>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut Ananda dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Regards,<br>
       <strong>Tim Finance Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1064,11 +1064,11 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Proses re-enrollment periode <strong>{{academicYear}}</strong> sudah dibuka.</p>
-      
+
       <p>Silakan orang tua/wali menyelesaikan proses re-enrollment tersebut dengan cara:</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
           <li style="margin-bottom: 10px;">
@@ -1079,25 +1079,25 @@ const defaultTemplates: Template[] = [
           </li>
         </ol>
       </div>
-      
+
       <div style="text-align: center; margin: 30px 0;">
-        <a href="{{ppdbWebsiteLink}}" 
-           style="background-color: #007bff; 
-                  color: white; 
-                  padding: 12px 30px; 
-                  text-decoration: none; 
-                  border-radius: 5px; 
+        <a href="{{ppdbWebsiteLink}}"
+           style="background-color: #007bff;
+                  color: white;
+                  padding: 12px 30px;
+                  text-decoration: none;
+                  border-radius: 5px;
                   display: inline-block;
                   font-weight: bold;">
           Website PPDB MNS
         </a>
       </div>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1164,10 +1164,10 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
-      <div style="background-color: #d4edda; 
-                  border-left: 4px solid #28a745; 
-                  padding: 20px; 
+
+      <div style="background-color: #d4edda;
+                  border-left: 4px solid #28a745;
+                  padding: 20px;
                   margin: 25px 0;
                   border-radius: 4px;
                   text-align: center;">
@@ -1178,16 +1178,16 @@ const defaultTemplates: Template[] = [
           Proses Re-enrollment Ananda sudah selesai dan sudah kami verifikasi.
         </p>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Kami mengucapkan terima kasih karena sudah mempercayakan pendidikan Ananda <strong>{{name}}</strong> di Multimedia Nusantara School.
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Regards,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1227,14 +1227,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}},</h2>
-      
+
       <p>Kami telah menerima pembayaran tagihan Anda dengan rincian sebagai berikut.</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
           📋 Rincian Pembayaran
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
@@ -1280,35 +1280,33 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
+
       <div style="background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
           📝 Daftar Tagihan yang Dibayar
         </h3>
-        <div style="line-height: 1.8;">
-          {{billingList}}
-        </div>
+        <pre style="font-family: Arial, sans-serif; line-height: 1.8; white-space: pre-line; margin: 0;">{{billingList}}</pre>
       </div>
-      
-      <div style="background-color: #e7f3ff; 
-                  border-left: 4px solid #007bff; 
-                  padding: 15px; 
+
+      <div style="background-color: #e7f3ff;
+                  border-left: 4px solid #007bff;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #004085;">
           ℹ️ Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> sedang kami persiapkan. Kami akan segera menginformasikan kembali begitu jadwal tersedia.
         </p>
       </div>
-      
+
       <p style="font-size: 16px; line-height: 1.6;">
         Kami sangat menantikan kehadiran Ananda di Trial Class MNS. Sampai jumpa dan rasakan pengalaman belajar yang menyenangkan bersama MNS! 🎓✨
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1374,11 +1372,10 @@ const defaultTemplates: Template[] = [
       {
         name: "billingList",
         description:
-          "Daftar tagihan yang dibayar dalam format list dengan HTML atau plain text",
+          "Daftar tagihan yang dibayar dalam format plain text (gunakan newline untuk pemisah item)",
         required: true,
         type: "string",
-        example:
-          "<ol><li>Booking Fee: Rp3.000.000</li><li>Trial Class Fee: Rp200.000</li></ol>",
+        example: "1. Booking Fee: Rp3.000.000\\n2. Trial Class Fee: Rp200.000",
       },
     ],
     qiscusConfig: {
@@ -1407,14 +1404,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
-      
+
       <p>Kami sampaikan bahwa saat ini terdapat tagihan baru dengan rincian sebagai berikut.</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
           📋 Rincian Tagihan
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
@@ -1458,22 +1455,22 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
-      <div style="background-color: #fff3cd; 
-                  border-left: 4px solid #ffc107; 
-                  padding: 15px; 
+
+      <div style="background-color: #fff3cd;
+                  border-left: 4px solid #ffc107;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #856404;">
           ⚠️ Orang tua/wali diharapkan untuk melakukan pembayaran tepat waktu sebelum tanggal jatuh tempo.
         </p>
       </div>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Finance Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1570,14 +1567,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
-      
+
       <p>Kami telah menerima pembayaran tagihan Anda dengan rincian sebagai berikut.</p>
-      
+
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
           📋 Rincian Pembayaran
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6;">
@@ -1623,31 +1620,29 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
+
       <div style="background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
           📝 Daftar Tagihan yang Dibayar
         </h3>
-        <div style="line-height: 1.8;">
-          {{billingList}}
-        </div>
+        <pre style="font-family: Arial, sans-serif; line-height: 1.8; white-space: pre-line; margin: 0;">{{billingList}}</pre>
       </div>
-      
-      <div style="background-color: #e7f3ff; 
-                  border-left: 4px solid #007bff; 
-                  padding: 15px; 
+
+      <div style="background-color: #e7f3ff;
+                  border-left: 4px solid #007bff;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #004085;">
           ℹ️ Bukti pembayaran ini akan tersimpan dalam sistem kami. Jika Bapak/Ibu membutuhkan salinan atau mengalami kendala, silakan hubungi kami.
         </p>
       </div>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Finance Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1721,11 +1716,11 @@ const defaultTemplates: Template[] = [
       {
         name: "billingList",
         description:
-          "Daftar tagihan yang dibayar dalam format list dengan HTML atau plain text",
+          "Daftar tagihan yang dibayar dalam format plain text (gunakan \\n untuk pemisah baris)",
         required: true,
         type: "string",
         example:
-          "<ol><li>DPP Januari: Rp10.000.000</li><li>SPP Januari: Rp3.000.000</li><li>Seragam: Rp2.000.000</li></ol>",
+          "1. DPP Januari: Rp10.000.000\\n2. SPP Januari: Rp3.000.000\\n3. Seragam: Rp2.000.000",
       },
     ],
     qiscusConfig: {
@@ -1755,14 +1750,14 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
-      
+
       <p>Kami mengingatkan untuk melakukan pembayaran tagihan berikut karena sudah mendekati tanggal jatuh tempo.</p>
-      
+
       <div style="background-color: #fff3cd; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #ffc107;">
         <h3 style="margin-top: 0; color: #856404;">
           ⚠️ Rincian Tagihan
         </h3>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc;">
@@ -1806,22 +1801,22 @@ const defaultTemplates: Template[] = [
           </tr>
         </table>
       </div>
-      
-      <div style="background-color: #f8d7da; 
-                  border-left: 4px solid #dc3545; 
-                  padding: 15px; 
+
+      <div style="background-color: #f8d7da;
+                  border-left: 4px solid #dc3545;
+                  padding: 15px;
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #721c24;">
           ⏰ <strong>Penting:</strong> Orang tua/wali diharapkan untuk melakukan pembayaran tepat waktu sebelum tanggal jatuh tempo. Jika terdapat kendala silakan hubungi kami.
         </p>
       </div>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Finance Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1918,33 +1913,33 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo {{name}},</h2>
-      
+
       <p>Terima kasih telah mendaftar di portal PPDB Multimedia Nusantara School.</p>
-      
+
       <p>Silakan klik tombol di bawah ini untuk memverifikasi email Anda dan melanjutkan proses pendaftaran:</p>
-      
+
       <div style="text-align: center; margin: 30px 0;">
-        <a href="{{verificationLink}}" 
-           style="background-color: #007bff; 
-                  color: white; 
-                  padding: 12px 30px; 
-                  text-decoration: none; 
-                  border-radius: 5px; 
+        <a href="{{verificationLink}}"
+           style="background-color: #007bff;
+                  color: white;
+                  padding: 12px 30px;
+                  text-decoration: none;
+                  border-radius: 5px;
                   display: inline-block;
                   font-weight: bold;">
           Verifikasi Email
         </a>
       </div>
-      
+
       <p style="color: #666; font-size: 14px;">
         Jika Anda tidak merasa melakukan pendaftaran, Anda dapat mengabaikan email ini.
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -1984,43 +1979,43 @@ const defaultTemplates: Template[] = [
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo {{name}},</h2>
-      
+
       <p>Kami menerima permintaan reset password pada akun Anda.</p>
-      
+
       <p>Klik tombol di bawah untuk membuat password baru:</p>
-      
+
       <div style="text-align: center; margin: 30px 0;">
-        <a href="{{resetLink}}" 
-           style="background-color: #dc3545; 
-                  color: white; 
-                  padding: 12px 30px; 
-                  text-decoration: none; 
-                  border-radius: 5px; 
+        <a href="{{resetLink}}"
+           style="background-color: #dc3545;
+                  color: white;
+                  padding: 12px 30px;
+                  text-decoration: none;
+                  border-radius: 5px;
                   display: inline-block;
                   font-weight: bold;">
           Reset Password
         </a>
       </div>
-      
-      <div style="background-color: #fff3cd; 
-                  border-left: 4px solid #ffc107; 
-                  padding: 12px 15px; 
+
+      <div style="background-color: #fff3cd;
+                  border-left: 4px solid #ffc107;
+                  padding: 12px 15px;
                   margin: 20px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #856404;">
           ⚠️ <strong>Penting:</strong> Link tersebut hanya berlaku selama <strong>{{linkLifetime}}</strong>.
         </p>
       </div>
-      
+
       <p style="color: #666; font-size: 14px;">
         Abaikan email ini jika Anda merasa tidak melakukan permintaan reset password.
       </p>
-      
+
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      
+
       <p>Terima kasih,<br>
       <strong>Tim Admisi Multimedia Nusantara School</strong></p>
-      
+
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">Butuh bantuan?</p>
         <p style="margin: 5px 0;">Hubungi kami melalui:</p>
@@ -2076,7 +2071,7 @@ export class TemplateService {
 
   static getTemplatesByChannel(channel: ChannelType): Template[] {
     return Array.from(templates.values()).filter((t) =>
-      t.channels.includes(channel)
+      t.channels.includes(channel),
     );
   }
 
@@ -2088,7 +2083,7 @@ export class TemplateService {
    * Get template variable requirements
    */
   static getTemplateRequirements(
-    templateId: string
+    templateId: string,
   ): VariableRequirement[] | null {
     const template = templates.get(templateId);
     if (!template) return null;
@@ -2101,7 +2096,7 @@ export class TemplateService {
    */
   static validateVariables(
     templateId: string,
-    variables: TemplateVariable
+    variables: TemplateVariable,
   ): { valid: boolean; missing: string[]; errors: string[] } {
     const template = templates.get(templateId);
     if (!template) {
@@ -2119,14 +2114,14 @@ export class TemplateService {
     if (!template.variableRequirements) {
       // If no requirements, just check if variables exist
       const missingVars = template.variables.filter(
-        (varName) => !(varName in variables)
+        (varName) => !(varName in variables),
       );
 
       return {
         valid: missingVars.length === 0,
         missing: missingVars,
         errors: missingVars.map(
-          (varName) => `Missing required variable: ${varName}`
+          (varName) => `Missing required variable: ${varName}`,
         ),
       };
     }
@@ -2142,7 +2137,7 @@ export class TemplateService {
       ) {
         missing.push(req.name);
         errors.push(
-          `Missing required variable: '${req.name}' (${req.description})`
+          `Missing required variable: '${req.name}' (${req.description})`,
         );
         return;
       }
@@ -2157,28 +2152,28 @@ export class TemplateService {
         case "email":
           if (typeof value === "string" && !value.includes("@")) {
             errors.push(
-              `Invalid email format for variable '${req.name}': ${value}`
+              `Invalid email format for variable '${req.name}': ${value}`,
             );
           }
           break;
         case "phone":
           if (typeof value === "string" && !/^\+?[\d\s-]+$/.test(value)) {
             errors.push(
-              `Invalid phone format for variable '${req.name}': ${value}`
+              `Invalid phone format for variable '${req.name}': ${value}`,
             );
           }
           break;
         case "number":
           if (typeof value !== "number" && isNaN(Number(value))) {
             errors.push(
-              `Variable '${req.name}' must be a number, got: ${value}`
+              `Variable '${req.name}' must be a number, got: ${value}`,
             );
           }
           break;
         case "string":
           if (typeof value !== "string" && typeof value !== "number") {
             errors.push(
-              `Variable '${req.name}' must be a string, got: ${typeof value}`
+              `Variable '${req.name}' must be a string, got: ${typeof value}`,
             );
           }
           break;
@@ -2193,7 +2188,7 @@ export class TemplateService {
   }
 
   static createTemplate(
-    template: Omit<Template, "createdAt" | "updatedAt">
+    template: Omit<Template, "createdAt" | "updatedAt">,
   ): Template {
     const newTemplate: Template = {
       ...template,
@@ -2206,7 +2201,7 @@ export class TemplateService {
 
   static updateTemplate(
     id: string,
-    updates: Partial<Template>
+    updates: Partial<Template>,
   ): Template | null {
     const template = templates.get(id);
     if (!template) return null;
@@ -2226,7 +2221,7 @@ export class TemplateService {
 
   static renderTemplate(
     template: Template,
-    variables: TemplateVariable
+    variables: TemplateVariable,
   ): { subject?: string; body: string } {
     let renderedSubject = template.subject || "";
     let renderedBody = template.body;
@@ -2248,7 +2243,7 @@ export class TemplateService {
   // Build Qiscus template components from variables
   static buildQiscusComponents(
     template: Template,
-    variables: TemplateVariable
+    variables: TemplateVariable,
   ): QiscusTemplateComponent[] {
     if (!template.qiscusConfig) {
       throw new Error("Template does not have Qiscus configuration");
