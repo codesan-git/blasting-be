@@ -1,3 +1,4 @@
+// src/index.ts
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -23,6 +24,7 @@ import smtpService from "./services/smtp.service";
 import qiscusService from "./services/qiscus.service";
 import qiscusWebhookService from "./services/qiscus-webhook.service";
 import backupScheduler from "./jobs/backup.job";
+import DatabaseService from "./services/database.service";
 
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
@@ -119,10 +121,18 @@ const registerQiscusWebhook = async () => {
 
 const startServer = async () => {
   try {
+    // 1. Initialize Redis
     await testRedisConnection();
+
+    // 2. Initialize Database (WAIT for connection before starting app)
+    // Ini akan menjalankan retry logic jika DB belum siap
+    await DatabaseService.initialize();
+
+    // 3. Check other services
     await testSMTPConnection();
     checkQiscusConfig();
 
+    // 4. Start Server
     app.listen(PORT, async () => {
       logger.info(`Server running on port ${PORT}`, { important: true });
       logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
@@ -175,15 +185,23 @@ const startServer = async () => {
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM received, closing server gracefully");
   backupScheduler.stop();
+
+  // Close resources
+  await DatabaseService.close(); // Close DB pool
   await emailWorker.close();
   await messageWorker.close();
+
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   logger.info("SIGINT received, closing server gracefully");
+
+  // Close resources
+  await DatabaseService.close(); // Close DB pool
   await emailWorker.close();
   await messageWorker.close();
+
   process.exit(0);
 });
 
