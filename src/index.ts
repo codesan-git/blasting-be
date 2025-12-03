@@ -33,7 +33,7 @@ const testRedisConnection = async () => {
   try {
     await redis.ping();
     logger.info("Redis connection test successful");
-    redis.disconnect();
+    // redis.disconnect();
   } catch (error) {
     logger.error("Redis connection test failed:", error);
     process.exit(1);
@@ -54,7 +54,7 @@ const testSMTPConnection = async () => {
       });
     } else if (status.configured && !isVerified) {
       logger.warn(
-        "SMTP configured but connection failed. Check your credentials."
+        "SMTP configured but connection failed. Check your credentials.",
       );
     } else {
       logger.info("SMTP not configured. Running in simulation mode.");
@@ -77,7 +77,7 @@ const checkQiscusConfig = () => {
     });
   } else {
     logger.info(
-      "Qiscus WhatsApp not configured. WhatsApp messages will be simulated."
+      "Qiscus WhatsApp not configured. WhatsApp messages will be simulated.",
     );
   }
 };
@@ -135,12 +135,12 @@ const startServer = async () => {
 
       logger.info("=== Service Status ===", { important: true });
       logger.info(
-        `SMTP: ${smtpStatus.configured ? "CONFIGURED" : "SIMULATION"}`
+        `SMTP: ${smtpStatus.configured ? "CONFIGURED" : "SIMULATION"}`,
       );
       logger.info(
         `Qiscus WhatsApp: ${
           qiscusStatus.configured ? "CONFIGURED" : "SIMULATION"
-        }`
+        }`,
       );
 
       // Register webhook after server starts
@@ -156,11 +156,11 @@ const startServer = async () => {
       logger.info("=== Backup Configuration ===", { important: true });
       const backupStatus = backupScheduler.getStatus();
       logger.info(
-        `Backup Scheduler: ${backupStatus.enabled ? "ENABLED" : "DISABLED"}`
+        `Backup Scheduler: ${backupStatus.enabled ? "ENABLED" : "DISABLED"}`,
       );
       if (backupStatus.enabled) {
         logger.info(
-          `Backup Interval: Every ${backupStatus.intervalHours} hours`
+          `Backup Interval: Every ${backupStatus.intervalHours} hours`,
         );
         logger.info(`Compression: ${backupStatus.compressed ? "ON" : "OFF"}`);
       }
