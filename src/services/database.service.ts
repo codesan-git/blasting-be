@@ -250,10 +250,13 @@ export class DatabaseService {
           throw error; // Throw to outer catch to trigger retry
         }
       } catch (error) {
+        const errorMessage = (error as Error).message || String(error);
+
         console.error(
           `❌ Database connection failed (Attempt ${i + 1}/${retries}):`,
-          error.message,
+          errorMessage,
         );
+
         if (i < retries - 1) {
           console.log(`Waiting ${delay / 1000} seconds before retrying...`);
           await new Promise((res) => setTimeout(res, delay));
