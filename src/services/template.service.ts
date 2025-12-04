@@ -2222,6 +2222,7 @@ export class TemplateService {
   static renderTemplate(
     template: Template,
     variables: TemplateVariable,
+    channel: ChannelType,
   ): { subject?: string; body: string } {
     let renderedSubject = template.subject || "";
     let renderedBody = template.body;

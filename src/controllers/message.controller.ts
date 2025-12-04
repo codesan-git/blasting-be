@@ -26,7 +26,7 @@ interface RecipientValidationError {
 
 export const sendMessageBlast = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const {
@@ -71,14 +71,14 @@ export const sendMessageBlast = async (
     // ===== STEP 2: Validate Channels =====
     const validChannels = ["email", "whatsapp", "sms", "push"];
     const invalidChannels = channels.filter(
-      (ch) => !validChannels.includes(ch)
+      (ch) => !validChannels.includes(ch),
     );
 
     if (invalidChannels.length > 0) {
       validationErrors.push({
         field: "channels",
         message: `Invalid channels: ${invalidChannels.join(
-          ", "
+          ", ",
         )}. Valid channels: ${validChannels.join(", ")}`,
       });
       ResponseHelper.validationError(res, validationErrors);
@@ -90,7 +90,7 @@ export const sendMessageBlast = async (
     if (!template) {
       ResponseHelper.notFound(
         res,
-        `Template with ID '${templateId}' not found`
+        `Template with ID '${templateId}' not found`,
       );
       return;
     }
@@ -107,7 +107,7 @@ export const sendMessageBlast = async (
 
     // ===== STEP 4: Validate Channel Compatibility =====
     const incompatibleChannels = channels.filter(
-      (ch) => !template.channels.includes(ch as ChannelType)
+      (ch) => !template.channels.includes(ch as ChannelType),
     );
 
     if (incompatibleChannels.length > 0) {
@@ -116,7 +116,7 @@ export const sendMessageBlast = async (
         message: `Template '${
           template.name
         }' is only available for channels: ${template.channels.join(
-          ", "
+          ", ",
         )}. You requested: ${channels.join(", ")}`,
       });
       ResponseHelper.validationError(res, validationErrors);
@@ -140,13 +140,13 @@ export const sendMessageBlast = async (
 
       // Check basic recipient fields only if template requires them OR channel needs them
       const templateNeedsName = template.variableRequirements?.some(
-        (req) => req.name === "name" && req.required
+        (req) => req.name === "name" && req.required,
       );
       const templateNeedsEmail = template.variableRequirements?.some(
-        (req) => req.name === "email" && req.required
+        (req) => req.name === "email" && req.required,
       );
       const templateNeedsPhone = template.variableRequirements?.some(
-        (req) => req.name === "phone" && req.required
+        (req) => req.name === "phone" && req.required,
       );
 
       // Validate name (only if not already handled by template requirements)
@@ -300,7 +300,7 @@ export const sendMessageBlast = async (
     if (recipientValidationErrors.length > 0) {
       // Flatten all recipient errors into a single array
       const allErrors = recipientValidationErrors.flatMap(
-        (recipientError) => recipientError.errors
+        (recipientError) => recipientError.errors,
       );
 
       logger.warn("Message blast validation failed", {
@@ -314,7 +314,7 @@ export const sendMessageBlast = async (
       ResponseHelper.validationError(
         res,
         allErrors,
-        `Validation failed for ${recipientValidationErrors.length} recipient(s). Please check all fields.`
+        `Validation failed for ${recipientValidationErrors.length} recipient(s). Please check all fields.`,
       );
       return;
     }
@@ -345,7 +345,11 @@ export const sendMessageBlast = async (
 
       for (const selectedChannel of channels) {
         if (selectedChannel === "email" && recipient.email) {
-          const rendered = TemplateService.renderTemplate(template, variables);
+          const rendered = TemplateService.renderTemplate(
+            template,
+            variables,
+            ChannelType.EMAIL,
+          );
 
           logger.debug("Rendered email template", {
             recipient: recipient.email,
@@ -377,7 +381,7 @@ export const sendMessageBlast = async (
           if (template.qiscusConfig) {
             const qiscusComponents = TemplateService.buildQiscusComponents(
               template,
-              variables
+              variables,
             );
 
             const whatsappJob: WhatsAppJobData = {
@@ -402,7 +406,8 @@ export const sendMessageBlast = async (
           } else {
             const rendered = TemplateService.renderTemplate(
               template,
-              variables
+              variables,
+              ChannelType.WHATSAPP,
             );
             const whatsappJob: WhatsAppJobData = {
               recipient: {
@@ -440,7 +445,7 @@ export const sendMessageBlast = async (
     if (messageJobs.length === 0) {
       ResponseHelper.badRequest(
         res,
-        "No valid recipients found for the selected channel(s). Make sure recipients have required contact info (email/phone)."
+        "No valid recipients found for the selected channel(s). Make sure recipients have required contact info (email/phone).",
       );
       return;
     }
@@ -514,14 +519,14 @@ export const sendMessageBlast = async (
       res,
       `Failed to queue message blast: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
+      }`,
     );
   }
 };
 
 export const getQueueStats = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { messageQueue } = await import("../queues/message.queue");
@@ -544,7 +549,7 @@ export const getQueueStats = async (
     ResponseHelper.success(
       res,
       data,
-      "Queue statistics retrieved successfully"
+      "Queue statistics retrieved successfully",
     );
   } catch (error) {
     logger.error("Error getting queue stats:", error);
@@ -552,7 +557,7 @@ export const getQueueStats = async (
       res,
       `Failed to get queue statistics: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
+      }`,
     );
   }
 };
