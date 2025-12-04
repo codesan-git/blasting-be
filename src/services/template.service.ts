@@ -2235,6 +2235,10 @@ export class TemplateService {
       renderedBody = renderedBody.replace(regex, String(value));
     });
 
+    if (channel === ChannelType.EMAIL) {
+      renderedBody = renderedBody.replace(/\|/g, "<br/>");
+    }
+
     return {
       subject: template.subject ? renderedSubject : undefined,
       body: renderedBody,
