@@ -1375,7 +1375,7 @@ const defaultTemplates: Template[] = [
           "Daftar tagihan yang dibayar dalam format plain text (gunakan newline untuk pemisah item)",
         required: true,
         type: "string",
-        example: "1. Booking Fee: Rp3.000.000\\n2. Trial Class Fee: Rp200.000",
+        example: "1. Booking Fee: Rp3.000.000 | 2. Trial Class Fee: Rp200.000",
       },
     ],
     qiscusConfig: {
@@ -1720,7 +1720,7 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example:
-          "1. DPP Januari: Rp10.000.000\\n2. SPP Januari: Rp3.000.000\\n3. Seragam: Rp2.000.000",
+          "1. DPP Januari: Rp10.000.000 | 2. SPP Januari: Rp3.000.000 | 3. Seragam: Rp2.000.000",
       },
     ],
     qiscusConfig: {
