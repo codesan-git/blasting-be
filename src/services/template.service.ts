@@ -6,13 +6,38 @@ import {
   TemplateVariable,
   QiscusTemplateComponent,
   VariableRequirement,
+  TemplateAttachment,
+  TemplateRenderData,
 } from "../types/template.types";
+import { AttachmentService } from "./attachment.service";
 
 // In-memory template storage
 const templates: Map<string, Template> = new Map();
 
 // Pre-defined templates with variable requirements
 const defaultTemplates: Template[] = [
+  {
+    id: "audit_reminder_001",
+    name: "Reminder Penyelesaian Temuan Audit",
+    type: TemplateType.REMINDER,
+    channels: [ChannelType.EMAIL],
+    subject: "Reminder: Penyelesaian Temuan Audit Tahun {{year}}",
+    body: `Dear Bapak/Ibu, <br><br>Penyelesaian temuan audit untuk tahun {{year}} perlu perbaikan.<br><br>Mohon melakukan perbaikan kembali melalui aplikasi SIAMI (siami.umn.ac.id) pada menu Auditee > Audit > List Finding.<br><br>Terima Kasih<br><br><b>This email was sent automatically by system</b>`,
+    variables: ["year"],
+    variableRequirements: [
+      {
+        name: "year",
+        description: "Tahun audit",
+        required: true,
+        type: "string",
+        example: "2025",
+      },
+    ],
+    // Enable attachment support for this template
+    supportsAttachments: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
   {
     id: "invoicing_testing_v1_2",
     name: "Invoice Notification (Multi-Channel)",
@@ -2170,6 +2195,13 @@ export class TemplateService {
             );
           }
           break;
+        case "url":
+          if (typeof value === "string" && !/^https?:\/\/.+/.test(value)) {
+            errors.push(
+              `Invalid URL format for variable '${req.name}': ${value}`,
+            );
+          }
+          break;
         case "string":
           if (typeof value !== "string" && typeof value !== "number") {
             errors.push(
@@ -2183,6 +2215,83 @@ export class TemplateService {
     return {
       valid: errors.length === 0,
       missing,
+      errors,
+    };
+  }
+
+  /**
+   * Validate attachments (optional)
+   */
+  static validateAttachments(
+    templateId: string,
+    attachments?: TemplateAttachment[],
+  ): { valid: boolean; errors: string[] } {
+    const template = templates.get(templateId);
+
+    if (!template) {
+      return {
+        valid: false,
+        errors: [`Template '${templateId}' not found`],
+      };
+    }
+
+    // If template doesn't support attachments
+    if (
+      !template.supportsAttachments &&
+      attachments &&
+      attachments.length > 0
+    ) {
+      return {
+        valid: false,
+        errors: [`Template '${templateId}' does not support attachments`],
+      };
+    }
+
+    // If no attachments provided, it's valid (attachments are optional)
+    if (!attachments || attachments.length === 0) {
+      return { valid: true, errors: [] };
+    }
+
+    const errors: string[] = [];
+
+    attachments.forEach((attachment, index) => {
+      if (!attachment.filename) {
+        errors.push(`Attachment ${index + 1}: filename is required`);
+      }
+
+      // Must have either content, path, or url
+      if (!attachment.content && !attachment.path && !attachment.url) {
+        errors.push(
+          `Attachment ${index + 1}: must provide content, path, or url`,
+        );
+      }
+
+      // Validate contentType if provided
+      if (attachment.contentType && !attachment.contentType.includes("/")) {
+        errors.push(`Attachment ${index + 1}: invalid contentType format`);
+      }
+
+      // Validate file type using AttachmentService
+      if (
+        attachment.filename &&
+        !AttachmentService.validateType(attachment.filename)
+      ) {
+        errors.push(
+          `Attachment ${index + 1}: file type not allowed for '${attachment.filename}'`,
+        );
+      }
+
+      // Validate size if content is provided
+      if (
+        attachment.content &&
+        !AttachmentService.validateSize(attachment.content)
+      ) {
+        errors.push(`Attachment ${index + 1}: file size exceeds 10MB limit`);
+      }
+    });
+
+    return {
+      valid: errors.length === 0,
       errors,
     };
   }
@@ -2227,7 +2336,6 @@ export class TemplateService {
     let renderedSubject = template.subject || "";
     let renderedBody = template.body;
 
-    // Replace all variables in subject and body
     Object.keys(variables).forEach((key) => {
       const value = variables[key];
       const regex = new RegExp(`{{${key}}}`, "g");
@@ -2245,6 +2353,40 @@ export class TemplateService {
     };
   }
 
+  /**
+   * Render template with attachments support
+   */
+  static renderTemplateWithAttachments(
+    template: Template,
+    data: TemplateRenderData,
+    channel: ChannelType,
+  ): {
+    subject?: string;
+    body: string;
+    attachments?: TemplateAttachment[];
+  } {
+    const { variables, attachments } = data;
+
+    // Render subject and body
+    const rendered = this.renderTemplate(template, variables, channel);
+
+    // Merge static template attachments with dynamic attachments
+    const finalAttachments: TemplateAttachment[] = [];
+
+    if (template.attachments) {
+      finalAttachments.push(...template.attachments);
+    }
+
+    if (attachments && template.supportsAttachments) {
+      finalAttachments.push(...attachments);
+    }
+
+    return {
+      ...rendered,
+      attachments: finalAttachments.length > 0 ? finalAttachments : undefined,
+    };
+  }
+
   // Build Qiscus template components from variables
   static buildQiscusComponents(
     template: Template,
@@ -2257,7 +2399,6 @@ export class TemplateService {
     const components: QiscusTemplateComponent[] = [];
     const config = template.qiscusConfig;
 
-    // Header component
     if (config.headerVariables && config.headerVariables.length > 0) {
       components.push({
         type: "header",
@@ -2268,7 +2409,6 @@ export class TemplateService {
       });
     }
 
-    // Body component
     if (config.bodyVariables && config.bodyVariables.length > 0) {
       components.push({
         type: "body",
@@ -2279,7 +2419,6 @@ export class TemplateService {
       });
     }
 
-    // Button component (untuk dynamic URL)
     if (config.buttonVariables && config.buttonVariables.length > 0) {
       components.push({
         type: "button",

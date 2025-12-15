@@ -24,7 +24,7 @@ export interface VariableRequirement {
   name: string;
   description: string;
   required: boolean;
-  type: "string" | "number" | "date" | "email" | "phone";
+  type: "string" | "number" | "date" | "email" | "phone" | "url";
   example?: string;
 }
 
@@ -50,6 +50,15 @@ export interface QiscusTemplateConfig {
   buttonVariables?: string[]; // e.g., ["invoiceNumber"] for dynamic URL
 }
 
+// NEW: Attachment interface for email
+export interface TemplateAttachment {
+  filename: string;
+  content?: string; // base64 encoded content
+  path?: string; // file path
+  contentType?: string; // MIME type (e.g., 'application/pdf', 'image/png')
+  url?: string; // URL to download attachment
+}
+
 export interface Template {
   id: string;
   name: string;
@@ -65,6 +74,10 @@ export interface Template {
   // Qiscus WhatsApp specific
   qiscusConfig?: QiscusTemplateConfig;
 
+  // NEW: Attachment support (optional)
+  supportsAttachments?: boolean; // Indicates if this template supports dynamic attachments
+  attachments?: TemplateAttachment[]; // Static attachments that always included
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -74,6 +87,7 @@ export interface MessageRecipient {
   phone?: string; // WhatsApp number
   name: string;
   variables?: TemplateVariable; // Custom variables per recipient
+  attachments?: TemplateAttachment[]; // NEW: Optional per-recipient attachments
 }
 
 export interface SendMessageRequest {
@@ -83,4 +97,11 @@ export interface SendMessageRequest {
   globalVariables?: TemplateVariable; // Variables applied to all recipients
   from?: string; // Email sender
   scheduledAt?: Date; // Optional: schedule for later
+  attachments?: TemplateAttachment[]; // NEW: Optional global attachments for all recipients
+}
+
+// NEW: Helper interface for rendering template with attachments
+export interface TemplateRenderData {
+  variables: TemplateVariable;
+  attachments?: TemplateAttachment[];
 }

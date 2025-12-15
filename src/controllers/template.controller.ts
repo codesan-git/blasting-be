@@ -7,7 +7,7 @@ import ResponseHelper from "../utils/api-response.helper";
 
 export const getAllTemplates = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { channel, type } = req.query;
@@ -37,7 +37,7 @@ export const getAllTemplates = async (
 
 export const getTemplateById = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -61,7 +61,7 @@ export const getTemplateById = async (
  */
 export const getTemplateRequirements = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -81,6 +81,8 @@ export const getTemplateRequirements = async (
       requirements: requirements || [],
       variableCount: template.variables.length,
       variables: template.variables,
+      supportsAttachments: template.supportsAttachments || false,
+      staticAttachments: template.attachments || [],
     });
   } catch (error) {
     logger.error("Error getting template requirements:", error);
@@ -91,15 +93,18 @@ export const getTemplateRequirements = async (
 /**
  * Validate variables against template requirements
  * POST /api/templates/:id/validate
- * Body: { variables: { name: "John", email: "john@example.com" } }
+ * Body: {
+ *   variables: { name: "John", email: "john@example.com" },
+ *   attachments: [{ filename: "file.pdf", content: "base64..." }] // optional
+ * }
  */
 export const validateTemplateVariables = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { variables } = req.body;
+    const { variables, attachments } = req.body;
 
     if (!variables || typeof variables !== "object") {
       ResponseHelper.error(res, "Variables object is required");
@@ -113,20 +118,33 @@ export const validateTemplateVariables = async (
       return;
     }
 
-    const validation = TemplateService.validateVariables(id, variables);
+    // Validate variables
+    const variableValidation = TemplateService.validateVariables(id, variables);
 
-    if (validation.valid) {
+    // Validate attachments (if provided)
+    const attachmentValidation = TemplateService.validateAttachments(
+      id,
+      attachments,
+    );
+
+    if (variableValidation.valid && attachmentValidation.valid) {
       ResponseHelper.success(res, {
         success: true,
-        message: "All variables are valid",
+        message: "All variables and attachments are valid",
         validation: {
           valid: true,
           providedVariables: Object.keys(variables),
           requiredVariables: template.variables,
+          attachmentsCount: attachments?.length || 0,
+          supportsAttachments: template.supportsAttachments || false,
         },
       });
     } else {
-      ResponseHelper.error(res, `Variable validation failed: ${validation}`);
+      const errors = [
+        ...variableValidation.errors,
+        ...attachmentValidation.errors,
+      ];
+      ResponseHelper.error(res, `Validation failed: ${errors.join(", ")}`);
     }
   } catch (error) {
     logger.error("Error validating template variables:", error);
@@ -136,7 +154,7 @@ export const validateTemplateVariables = async (
 
 export const createTemplate = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const {
@@ -148,12 +166,14 @@ export const createTemplate = async (
       body,
       variables,
       variableRequirements,
+      supportsAttachments,
+      attachments,
     } = req.body;
 
     if (!id || !name || !type || !channels || !body) {
       ResponseHelper.error(
         res,
-        "Missing required fields: id, name, type, channels, body"
+        "Missing required fields: id, name, type, channels, body",
       );
       return;
     }
@@ -161,7 +181,7 @@ export const createTemplate = async (
     if (!Array.isArray(channels) || channels.length === 0) {
       ResponseHelper.error(
         res,
-        'Channels must be a non-empty array. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]'
+        'Channels must be a non-empty array. Example: ["email"], ["whatsapp"], or ["email", "whatsapp"]',
       );
       return;
     }
@@ -181,9 +201,15 @@ export const createTemplate = async (
       body,
       variables: variables || [],
       variableRequirements: variableRequirements || [],
+      supportsAttachments: supportsAttachments || false,
+      attachments: attachments || [],
     });
 
-    logger.info("Template created", { templateId: id, name });
+    logger.info("Template created", {
+      templateId: id,
+      name,
+      supportsAttachments: template.supportsAttachments,
+    });
 
     ResponseHelper.success(res, template, "Template created successfully");
   } catch (error) {
@@ -194,7 +220,7 @@ export const createTemplate = async (
 
 export const updateTemplate = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -218,7 +244,7 @@ export const updateTemplate = async (
 
 export const deleteTemplate = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -236,5 +262,81 @@ export const deleteTemplate = async (
   } catch (error) {
     logger.error("Error deleting template:", error);
     ResponseHelper.error(res, "Failed to delete template");
+  }
+};
+
+/**
+ * Preview rendered template with variables and attachments
+ * POST /api/templates/:id/preview
+ * Body: {
+ *   variables: { name: "John" },
+ *   channel: "email",
+ *   attachments: [{ filename: "file.pdf" }] // optional
+ * }
+ */
+export const previewTemplate = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { variables, channel, attachments } = req.body;
+
+    if (!variables || typeof variables !== "object") {
+      ResponseHelper.error(res, "Variables object is required");
+      return;
+    }
+
+    if (!channel || !Object.values(ChannelType).includes(channel)) {
+      ResponseHelper.error(
+        res,
+        "Valid channel is required (email, whatsapp, sms, push)",
+      );
+      return;
+    }
+
+    const template = TemplateService.getTemplateById(id);
+
+    if (!template) {
+      ResponseHelper.error(res, `Template with ID '${id}' not found`);
+      return;
+    }
+
+    // Validate
+    const variableValidation = TemplateService.validateVariables(id, variables);
+    const attachmentValidation = TemplateService.validateAttachments(
+      id,
+      attachments,
+    );
+
+    if (!variableValidation.valid || !attachmentValidation.valid) {
+      const errors = [
+        ...variableValidation.errors,
+        ...attachmentValidation.errors,
+      ];
+      ResponseHelper.error(res, `Validation failed: ${errors.join(", ")}`);
+      return;
+    }
+
+    // Render template
+    const rendered = TemplateService.renderTemplateWithAttachments(
+      template,
+      { variables, attachments },
+      channel,
+    );
+
+    ResponseHelper.success(res, {
+      templateId: id,
+      templateName: template.name,
+      channel,
+      rendered: {
+        subject: rendered.subject,
+        body: rendered.body,
+        attachments: rendered.attachments,
+      },
+    });
+  } catch (error) {
+    logger.error("Error previewing template:", error);
+    ResponseHelper.error(res, "Failed to preview template");
   }
 };
