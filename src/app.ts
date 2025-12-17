@@ -63,15 +63,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files for uploads - use same path as upload directory
-const uploadBaseDir = process.env.UPLOAD_DIR 
-  ? path.dirname(path.resolve(process.env.UPLOAD_DIR))
-  : path.join(process.cwd(), "uploads");
-// Serve attachments from the upload directory
-app.use("/uploads/attachments", express.static(
-  process.env.UPLOAD_DIR 
-    ? path.resolve(process.env.UPLOAD_DIR)
-    : path.join(process.cwd(), "uploads", "attachments")
-));
+const uploadDir = process.env.UPLOAD_DIR 
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(process.cwd(), "uploads", "attachments");
+app.use("/uploads/attachments", express.static(uploadDir));
 
 // Trust proxy - important for rate limiting behind reverse proxy
 app.set("trust proxy", 1);
