@@ -11,28 +11,44 @@ const uploadDir = process.env.UPLOAD_DIR
   : path.join(process.cwd(), "uploads", "attachments");
 
 // Ensure upload directory exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log(`📁 Created upload directory: ${uploadDir}`);
-} else {
-  console.log(`📁 Using upload directory: ${uploadDir}`);
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log(`📁 Created upload directory: ${uploadDir}`);
+  } else {
+    console.log(`📁 Using upload directory: ${uploadDir}`);
+  }
+} catch (error) {
+  console.error(`❌ Failed to create upload directory: ${uploadDir}`, error);
+  // Don't throw - let AttachmentService.init() handle it during startup
+  // Directory will be created in destination callback if needed
 }
 
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req: Request, file: Express.Multer.File, cb) => {
-    cb(null, uploadDir);
+    try {
+      // Ensure directory exists before saving
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    } catch (error) {
+      cb(error as Error, "");
+    }
   },
   filename: (req: Request, file: Express.Multer.File, cb) => {
-    // Generate unique filename: timestamp-hash-originalname
-    const timestamp = Date.now();
-    const hash = crypto.randomBytes(8).toString("hex");
-    const ext = path.extname(file.originalname);
-    const nameWithoutExt = path.basename(file.originalname, ext);
-    const uniqueName = `${timestamp}-${hash}-${nameWithoutExt}${ext}`;
-    const fullPath = path.join(uploadDir, uniqueName);
-    console.log(`💾 File will be saved to: ${fullPath}`);
-    cb(null, uniqueName);
+    try {
+      // Generate unique filename: timestamp-hash-originalname
+      const timestamp = Date.now();
+      const hash = crypto.randomBytes(8).toString("hex");
+      const ext = path.extname(file.originalname);
+      const nameWithoutExt = path.basename(file.originalname, ext);
+      const uniqueName = `${timestamp}-${hash}-${nameWithoutExt}${ext}`;
+      cb(null, uniqueName);
+    } catch (error) {
+      cb(error as Error, "");
+    }
   },
 });
 
