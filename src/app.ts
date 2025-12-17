@@ -8,6 +8,7 @@ import webhookRoutes from "./routes/webhook.routes";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import backupRoutes from "./routes/backup.routes";
+import customEmailRoutes from "./routes/custom-email.routes";
 import { getDashboardStats } from "./controllers/dashboard.controller";
 import logger from "./utils/logger";
 import { apiLogger } from "./middleware/apiLogger";
@@ -54,7 +55,7 @@ app.use(
     },
     challenge: true,
   }),
-  serverAdapter.getRouter()
+  serverAdapter.getRouter(),
 );
 console.log("🚀 Bull Board aktif di mode development: /admin/queues");
 //   })();
@@ -97,7 +98,7 @@ app.use("/api/", apiLimiter);
 
 app.use(
   "/api/permissions",
-  permissionRoutes // Already has authenticate & requireRole inside
+  permissionRoutes, // Already has authenticate & requireRole inside
 );
 
 // Protected routes with authentication and specific permissions
@@ -106,7 +107,7 @@ app.use(
   authenticate,
   requirePermission(Permission.EMAIL_SEND),
   blastLimiter,
-  emailRoutes
+  emailRoutes,
 );
 
 app.use(
@@ -114,7 +115,15 @@ app.use(
   authenticate,
   requirePermission([Permission.EMAIL_SEND, Permission.WHATSAPP_SEND]),
   blastLimiter,
-  messageRoutes
+  messageRoutes,
+);
+
+app.use(
+  "/api/custom-email",
+  authenticate,
+  requirePermission(Permission.EMAIL_SEND),
+  blastLimiter,
+  customEmailRoutes,
 );
 
 app.use(
@@ -122,26 +131,26 @@ app.use(
   authenticate,
   requirePermission(Permission.TEMPLATE_READ),
   templateLimiter,
-  templateRoutes
+  templateRoutes,
 );
 
 app.use(
   "/api/logs",
   authenticate,
   requirePermission(Permission.LOGS_READ),
-  logsRoutes
+  logsRoutes,
 );
 
 app.use(
   "/api/backup",
   authenticate,
   requirePermission(Permission.BACKUP_READ),
-  backupRoutes
+  backupRoutes,
 );
 
 app.use(
   "/api/users",
-  userRoutes // Already has authenticate middleware inside
+  userRoutes, // Already has authenticate middleware inside
 );
 
 // Dashboard endpoint (requires dashboard read permission)
@@ -149,7 +158,7 @@ app.get(
   "/api/dashboard",
   authenticate,
   requirePermission(Permission.DASHBOARD_READ),
-  getDashboardStats
+  getDashboardStats,
 );
 
 // Health check (no authentication required)
@@ -166,7 +175,7 @@ app.get(
     const smtpService = require("./services/smtp.service").default;
     const status = smtpService.getStatus();
     ResponseHelper.success(res, status);
-  }
+  },
 );
 
 // Qiscus webhook status (requires system config permission)
@@ -193,9 +202,9 @@ app.get(
     ResponseHelper.success(
       res,
       data,
-      "Qiscus webhook status retrieved successfully"
+      "Qiscus webhook status retrieved successfully",
     );
-  }
+  },
 );
 
 // Test template rendering endpoint (requires template read permission)
@@ -222,7 +231,7 @@ app.post(
 
       const rendered = TemplateService.renderTemplate(
         template,
-        variables || {}
+        variables || {},
       );
 
       const data = {
@@ -243,7 +252,7 @@ app.post(
       logger.error("Error testing template:", error);
       ResponseHelper.error(res, "Failed to test template");
     }
-  }
+  },
 );
 
 // Debug endpoint - cek webhook logs (requires system logs permission)
@@ -258,7 +267,7 @@ app.get(
       const logs = DatabaseService.getSystemLogs(
         undefined,
         parseInt(limit as string),
-        0
+        0,
       );
 
       const webhookLogs = (await logs).filter(
@@ -266,7 +275,7 @@ app.get(
           log.message.includes("WEBHOOK") ||
           log.message.includes("webhook") ||
           log.message.includes("message status") ||
-          log.message.includes("Qiscus")
+          log.message.includes("Qiscus"),
       );
 
       const data = {
@@ -276,13 +285,13 @@ app.get(
       ResponseHelper.success(
         res,
         data,
-        "Webhook debug logs retrieved successfully"
+        "Webhook debug logs retrieved successfully",
       );
     } catch (error) {
       logger.error("Error getting webhook debug logs:", error);
       ResponseHelper.error(res, "Failed to get webhook debug logs");
     }
-  }
+  },
 );
 
 // Debug endpoint - cek message by message_id (requires logs read permission)
@@ -309,7 +318,7 @@ app.get(
       logger.error("Error getting message by ID:", error);
       ResponseHelper.error(res, "Failed to get message");
     }
-  }
+  },
 );
 
 // Debug endpoint - test webhook payload (no auth - for external testing)
