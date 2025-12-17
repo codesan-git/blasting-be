@@ -119,7 +119,7 @@ app.use(
 );
 
 app.use(
-  "/api/custom-email",
+  "/api/custom-emails",
   authenticate,
   requirePermission(Permission.EMAIL_SEND),
   blastLimiter,

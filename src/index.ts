@@ -25,6 +25,7 @@ import qiscusService from "./services/qiscus.service";
 import qiscusWebhookService from "./services/qiscus-webhook.service";
 import backupScheduler from "./jobs/backup.job";
 import DatabaseService from "./services/database.service";
+import { AttachmentService } from "./services/attachment.service";
 
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
@@ -119,6 +120,20 @@ const registerQiscusWebhook = async () => {
   }
 };
 
+const initAttachmentStorage = async () => {
+  try {
+    await AttachmentService.init();
+    logger.info("Attachment storage initialized", {
+      path: process.env.UPLOAD_DIR || "./uploads/attachments",
+      important: true,
+    });
+  } catch (error) {
+    logger.error("Failed to initialize attachment storage:", error);
+    // Don't exit, just log warning - attachments are optional
+    logger.warn("Continuing without attachment storage");
+  }
+};
+
 const startServer = async () => {
   try {
     // 1. Initialize Redis
@@ -128,11 +143,14 @@ const startServer = async () => {
     // Ini akan menjalankan retry logic jika DB belum siap
     await DatabaseService.initialize();
 
-    // 3. Check other services
+    // 3. Initialize Attachment Storage
+    await initAttachmentStorage();
+
+    // 4. Check other services
     await testSMTPConnection();
     checkQiscusConfig();
 
-    // 4. Start Server
+    // 5. Start Server
     app.listen(PORT, async () => {
       logger.info(`Server running on port ${PORT}`, { important: true });
       logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);

@@ -19,3 +19,5 @@ coverage/
 data/
 .env.bak
 backups/
+uploads/
+!uploads/.gitkeep
