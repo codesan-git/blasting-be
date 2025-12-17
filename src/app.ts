@@ -66,7 +66,12 @@ app.use(express.urlencoded({ extended: true }));
 const uploadBaseDir = process.env.UPLOAD_DIR 
   ? path.dirname(path.resolve(process.env.UPLOAD_DIR))
   : path.join(process.cwd(), "uploads");
-app.use("/uploads", express.static(uploadBaseDir));
+// Serve attachments from the upload directory
+app.use("/uploads/attachments", express.static(
+  process.env.UPLOAD_DIR 
+    ? path.resolve(process.env.UPLOAD_DIR)
+    : path.join(process.cwd(), "uploads", "attachments")
+));
 
 // Trust proxy - important for rate limiting behind reverse proxy
 app.set("trust proxy", 1);
