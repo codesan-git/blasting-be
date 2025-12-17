@@ -1,5 +1,7 @@
 // src/app.ts - UPDATED VERSION WITH AUTHENTICATION
 import express, { Application, Request, Response, NextFunction } from "express";
+import multer from "multer";
+import path from "path";
 import emailRoutes from "./routes/email.routes";
 import messageRoutes from "./routes/message.routes";
 import templateRoutes from "./routes/template.routes";
@@ -9,6 +11,7 @@ import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import backupRoutes from "./routes/backup.routes";
 import customEmailRoutes from "./routes/custom-email.routes";
+import attachmentRoutes from "./routes/attachment.routes";
 import { getDashboardStats } from "./controllers/dashboard.controller";
 import logger from "./utils/logger";
 import { apiLogger } from "./middleware/apiLogger";
@@ -27,17 +30,13 @@ import { createBullBoard } from "@bull-board/api";
 import { messageQueue } from "./queues/message.queue";
 import expressBasicAuth from "express-basic-auth";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import smtpService from "./services/smtp.service";
+import qiscusWebhookService from "./services/qiscus-webhook.service";
+import { TemplateService } from "./services/template.service";
 
 const app: Application = express();
 
-// if (process.env.NODE_ENV !== "production") {
-// (async () => {
-// const { ExpressAdapter } = await import("@bull-board/express");
-// const { createBullBoard } = await import("@bull-board/api");
-// const { BullMQAdapter } = await import("@bull-board/api/bullMQAdapter");
-// const { messageQueue } = await import("./queues/message.queue");
-// const expressBasicAuth = await import("express-basic-auth");
-
+// Bull Board setup
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath("/admin/queues");
 
@@ -58,12 +57,13 @@ app.use(
   serverAdapter.getRouter(),
 );
 console.log("🚀 Bull Board aktif di mode development: /admin/queues");
-//   })();
-// }
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files for uploads
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Trust proxy - important for rate limiting behind reverse proxy
 app.set("trust proxy", 1);
@@ -153,6 +153,13 @@ app.use(
   userRoutes, // Already has authenticate middleware inside
 );
 
+app.use(
+  "/api/attachments",
+  authenticate,
+  requirePermission(Permission.EMAIL_SEND),
+  attachmentRoutes,
+);
+
 // Dashboard endpoint (requires dashboard read permission)
 app.get(
   "/api/dashboard",
@@ -163,7 +170,7 @@ app.get(
 
 // Health check (no authentication required)
 app.get("/health", (req: Request, res: Response) => {
-  ResponseHelper.success(res, "Health check successful");
+  ResponseHelper.success(res, { status: "healthy" }, "Health check successful");
 });
 
 // SMTP status check endpoint (requires system config permission)
@@ -172,7 +179,6 @@ app.get(
   authenticate,
   requirePermission(Permission.SYSTEM_CONFIG),
   (req: Request, res: Response) => {
-    const smtpService = require("./services/smtp.service").default;
     const status = smtpService.getStatus();
     ResponseHelper.success(res, status);
   },
@@ -184,8 +190,6 @@ app.get(
   authenticate,
   requirePermission(Permission.SYSTEM_CONFIG),
   async (req: Request, res: Response) => {
-    const qiscusWebhookService =
-      require("./services/qiscus-webhook.service").default;
     const status = qiscusWebhookService.getStatus();
 
     let config = null;
@@ -214,31 +218,32 @@ app.post(
   requirePermission(Permission.TEMPLATE_READ),
   (req: Request, res: Response) => {
     try {
-      const { templateId, variables } = req.body;
+      const { templateId, variables, channel } = req.body;
 
       if (!templateId) {
-        ResponseHelper.error(res, "templateId is required");
+        ResponseHelper.badRequest(res, "templateId is required");
         return;
       }
 
-      const { TemplateService } = require("./services/template.service");
       const template = TemplateService.getTemplateById(templateId);
 
       if (!template) {
-        ResponseHelper.error(res, `Template '${templateId}' not found`);
+        ResponseHelper.notFound(res, `Template '${templateId}' not found`);
         return;
       }
 
+      // renderTemplate expects 3 arguments: template, variables, channel
       const rendered = TemplateService.renderTemplate(
         template,
         variables || {},
+        channel || "email", // Default to email channel if not provided
       );
 
       const data = {
         template: {
           id: template.id,
           name: template.name,
-          channel: template.channel,
+          channels: template.channels, // Use 'channels' not 'channel'
         },
         variables: variables || {},
         rendered: {
@@ -250,7 +255,7 @@ app.post(
       ResponseHelper.success(res, data, "Template rendered successfully");
     } catch (error) {
       logger.error("Error testing template:", error);
-      ResponseHelper.error(res, "Failed to test template");
+      ResponseHelper.internalError(res, "Failed to test template");
     }
   },
 );
@@ -289,7 +294,7 @@ app.get(
       );
     } catch (error) {
       logger.error("Error getting webhook debug logs:", error);
-      ResponseHelper.error(res, "Failed to get webhook debug logs");
+      ResponseHelper.internalError(res, "Failed to get webhook debug logs");
     }
   },
 );
@@ -306,7 +311,10 @@ app.get(
       const message = DatabaseService.getMessageByMessageId(messageId);
 
       if (!message) {
-        ResponseHelper.error(res, `Message with ID '${messageId}' not found`);
+        ResponseHelper.notFound(
+          res,
+          `Message with ID '${messageId}' not found`,
+        );
         return;
       }
 
@@ -316,7 +324,7 @@ app.get(
       ResponseHelper.success(res, data, "Message retrieved successfully");
     } catch (error) {
       logger.error("Error getting message by ID:", error);
-      ResponseHelper.error(res, "Failed to get message");
+      ResponseHelper.internalError(res, "Failed to get message");
     }
   },
 );
@@ -338,9 +346,54 @@ app.post("/api/webhooks/test-payload", async (req: Request, res: Response) => {
     ResponseHelper.success(res, data, "Test payload logged successfully");
   } catch (error) {
     logger.error("Error logging test payload:", error);
-    ResponseHelper.error(res, "Failed to log test payload");
+    ResponseHelper.internalError(res, "Failed to log test payload");
   }
 });
+
+// Multer error handler (must be before general error handler)
+app.use(
+  (
+    err: Error | multer.MulterError,
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        logger.warn("File size limit exceeded", {
+          field: err.field,
+          limit: "10MB",
+        });
+        return ResponseHelper.badRequest(res, "File size exceeds 10MB limit");
+      }
+      if (err.code === "LIMIT_FILE_COUNT") {
+        logger.warn("File count limit exceeded", {
+          field: err.field,
+        });
+        return ResponseHelper.badRequest(res, "Too many files uploaded");
+      }
+      if (err.code === "LIMIT_UNEXPECTED_FILE") {
+        logger.warn("Unexpected file field", {
+          field: err.field,
+        });
+        return ResponseHelper.badRequest(
+          res,
+          `Unexpected file field: ${err.field}`,
+        );
+      }
+      logger.warn("Multer error", { code: err.code, message: err.message });
+      return ResponseHelper.badRequest(res, `Upload error: ${err.message}`);
+    }
+
+    // Check if it's a file type error from our fileFilter
+    if (err.message && err.message.includes("File type not allowed")) {
+      logger.warn("Invalid file type", { message: err.message });
+      return ResponseHelper.badRequest(res, err.message);
+    }
+
+    next(err);
+  },
+);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -349,13 +402,13 @@ app.use((req: Request, res: Response) => {
     path: req.path,
     ip: req.ip,
   });
-  ResponseHelper.error(res, "Route not found");
+  ResponseHelper.notFound(res, "Route not found");
 });
 
 // Error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   logger.error("Unhandled error:", err);
-  ResponseHelper.error(res, "Internal server error");
+  ResponseHelper.internalError(res, "Internal server error");
 });
 
 export default app;

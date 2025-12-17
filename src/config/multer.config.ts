@@ -1,8 +1,9 @@
 // src/config/multer.config.ts
-import multer from "multer";
+import multer, { FileFilterCallback } from "multer";
 import path from "path";
 import crypto from "crypto";
 import fs from "fs";
+import { Request } from "express";
 
 const uploadDir = process.env.UPLOAD_DIR || "./uploads/attachments";
 
@@ -13,10 +14,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // Configure storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: Request, file: Express.Multer.File, cb) => {
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (req: Request, file: Express.Multer.File, cb) => {
     // Generate unique filename: timestamp-hash-originalname
     const timestamp = Date.now();
     const hash = crypto.randomBytes(8).toString("hex");
@@ -29,9 +30,9 @@ const storage = multer.diskStorage({
 
 // File filter - only allow specific file types
 const fileFilter = (
-  req: any,
+  req: Request,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback,
+  cb: FileFilterCallback,
 ) => {
   const allowedMimes = [
     "application/pdf",

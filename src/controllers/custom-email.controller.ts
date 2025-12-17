@@ -1,12 +1,13 @@
 // src/controllers/custom-email.controller.ts
 import { Request, Response } from "express";
 import { CustomEmailService } from "../services/custom-email.service";
-import { SendCustomEmailRequest } from "../types/custom-email.types";
+import { SendCustomEmailRequest, CustomEmailRecipient } from "../types/custom-email.types";
+import { TemplateAttachment } from "../types/template.types";
 import logger from "../utils/logger";
 import ResponseHelper from "../utils/api-response.helper";
 
 /**
- * Send custom email
+ * Send custom email (JSON)
  * POST /api/custom-emails/send
  * Body: {
  *   from: "sender@example.com",
@@ -35,7 +36,7 @@ export const sendCustomEmail = async (
     // Validate request
     const validation = CustomEmailService.validateRequest(request);
     if (!validation.valid) {
-      ResponseHelper.error(
+      ResponseHelper.badRequest(
         res,
         `Validation failed: ${validation.errors.join(", ")}`,
       );
@@ -61,11 +62,11 @@ export const sendCustomEmail = async (
         "Custom email sent successfully",
       );
     } else {
-      ResponseHelper.error(res, result.error || "Failed to send custom email");
+      ResponseHelper.badRequest(res, result.error || "Failed to send custom email");
     }
   } catch (error) {
     logger.error("Error sending custom email:", error);
-    ResponseHelper.error(
+    ResponseHelper.internalError(
       res,
       error instanceof Error ? error.message : "Failed to send custom email",
     );
@@ -73,7 +74,145 @@ export const sendCustomEmail = async (
 };
 
 /**
- * Send bulk custom emails
+ * Send custom email with multipart/form-data
+ * POST /api/custom-emails/send-multipart
+ * Form data:
+ *   - from: string (optional)
+ *   - to: string (email, required)
+ *   - toName: string (optional)
+ *   - cc: string (optional)
+ *   - ccName: string (optional)
+ *   - bcc: string (optional)
+ *   - bccName: string (optional)
+ *   - replyTo: string (optional)
+ *   - subject: string (required)
+ *   - body: string (HTML, required)
+ *   - files: File[] (optional, multiple files)
+ */
+export const sendCustomEmailMultipart = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const {
+      from,
+      to,
+      toName,
+      cc,
+      ccName,
+      bcc,
+      bccName,
+      replyTo,
+      subject,
+      body,
+    } = req.body;
+
+    // Validate required fields
+    if (!to || !subject || !body) {
+      ResponseHelper.badRequest(
+        res,
+        "Required fields: to, subject, body",
+      );
+      return;
+    }
+
+    // Parse recipients
+    const recipients: CustomEmailRecipient[] = [
+      { email: to, name: toName || undefined },
+    ];
+
+    const ccRecipients: CustomEmailRecipient[] = cc
+      ? [{ email: cc, name: ccName || undefined }]
+      : [];
+
+    const bccRecipients: CustomEmailRecipient[] = bcc
+      ? [{ email: bcc, name: bccName || undefined }]
+      : [];
+
+    // Process uploaded files
+    const attachments: TemplateAttachment[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      const uploadedFiles = req.files as Express.Multer.File[];
+      
+      for (const file of uploadedFiles) {
+        attachments.push({
+          filename: file.originalname,
+          path: file.path,
+          contentType: file.mimetype,
+        });
+      }
+      
+      logger.info("Files uploaded for email", {
+        count: uploadedFiles.length,
+        files: uploadedFiles.map(f => f.originalname),
+      });
+    }
+
+    // Build request
+    const emailRequest: SendCustomEmailRequest = {
+      from: from || undefined,
+      to: recipients,
+      cc: ccRecipients.length > 0 ? ccRecipients : undefined,
+      bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
+      replyTo: replyTo || undefined,
+      subject,
+      body,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    };
+
+    // Validate request
+    const validation = CustomEmailService.validateRequest(emailRequest);
+    if (!validation.valid) {
+      ResponseHelper.badRequest(
+        res,
+        `Validation failed: ${validation.errors.join(", ")}`,
+      );
+      return;
+    }
+
+    // Send email
+    const result = await CustomEmailService.sendCustomEmail(emailRequest);
+
+    if (result.success) {
+      logger.info("Custom email sent via multipart", {
+        messageId: result.messageId,
+        recipients: result.recipients.to,
+        attachmentCount: attachments.length,
+      });
+
+      ResponseHelper.success(
+        res,
+        {
+          messageId: result.messageId,
+          recipients: result.recipients,
+          attachments: attachments.map((a) => ({
+            filename: a.filename,
+            size: req.files
+              ? (req.files as Express.Multer.File[]).find(
+                  (f) => f.originalname === a.filename,
+                )?.size
+              : 0,
+          })),
+        },
+        "Custom email sent successfully",
+      );
+    } else {
+      ResponseHelper.badRequest(
+        res,
+        result.error || "Failed to send custom email",
+      );
+    }
+  } catch (error) {
+    logger.error("Error sending custom email via multipart:", error);
+    ResponseHelper.internalError(
+      res,
+      error instanceof Error ? error.message : "Failed to send custom email",
+    );
+  }
+};
+
+/**
+ * Send bulk custom emails (JSON)
  * POST /api/custom-emails/send-bulk
  * Body: {
  *   from: "sender@example.com",
@@ -96,7 +235,7 @@ export const sendBulkCustomEmail = async (
     // Validate request
     const validation = CustomEmailService.validateRequest(request);
     if (!validation.valid) {
-      ResponseHelper.error(
+      ResponseHelper.badRequest(
         res,
         `Validation failed: ${validation.errors.join(", ")}`,
       );
@@ -104,7 +243,7 @@ export const sendBulkCustomEmail = async (
     }
 
     if (!request.to || request.to.length === 0) {
-      ResponseHelper.error(res, "At least one recipient is required");
+      ResponseHelper.badRequest(res, "At least one recipient is required");
       return;
     }
 
@@ -142,7 +281,141 @@ export const sendBulkCustomEmail = async (
     );
   } catch (error) {
     logger.error("Error sending bulk custom emails:", error);
-    ResponseHelper.error(res, "Failed to send bulk custom emails");
+    ResponseHelper.internalError(res, "Failed to send bulk custom emails");
+  }
+};
+
+/**
+ * Send bulk custom emails with multipart/form-data
+ * POST /api/custom-emails/send-bulk-multipart
+ * Form data:
+ *   - from: string (optional)
+ *   - recipients: string (required, format: "email1:name1,email2:name2,email3")
+ *   - subject: string (required)
+ *   - body: string (HTML, required)
+ *   - replyTo: string (optional)
+ *   - files: File[] (optional, multiple files)
+ */
+export const sendBulkCustomEmailMultipart = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { from, recipients, subject, body, replyTo } = req.body;
+
+    // Validate required fields
+    if (!recipients || !subject || !body) {
+      ResponseHelper.badRequest(
+        res,
+        "Required fields: recipients, subject, body",
+      );
+      return;
+    }
+
+    // Parse recipients (format: "email1:name1,email2:name2,email3:name3")
+    const recipientList: CustomEmailRecipient[] = recipients
+      .split(",")
+      .map((r: string) => {
+        const trimmed = r.trim();
+        if (trimmed.includes(":")) {
+          const [email, name] = trimmed.split(":");
+          return { email: email.trim(), name: name.trim() };
+        }
+        return { email: trimmed };
+      })
+      .filter((r: CustomEmailRecipient) => r.email); // Remove empty emails
+
+    if (recipientList.length === 0) {
+      ResponseHelper.badRequest(
+        res,
+        "At least one valid recipient is required",
+      );
+      return;
+    }
+
+    // Process uploaded files
+    const attachments: TemplateAttachment[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      const uploadedFiles = req.files as Express.Multer.File[];
+      
+      for (const file of uploadedFiles) {
+        attachments.push({
+          filename: file.originalname,
+          path: file.path,
+          contentType: file.mimetype,
+        });
+      }
+      
+      logger.info("Files uploaded for bulk email", {
+        count: uploadedFiles.length,
+        files: uploadedFiles.map(f => f.originalname),
+      });
+    }
+
+    // Build request
+    const emailRequest: SendCustomEmailRequest = {
+      from: from || undefined,
+      to: recipientList,
+      replyTo: replyTo || undefined,
+      subject,
+      body,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    };
+
+    // Validate request
+    const validation = CustomEmailService.validateRequest(emailRequest);
+    if (!validation.valid) {
+      ResponseHelper.badRequest(
+        res,
+        `Validation failed: ${validation.errors.join(", ")}`,
+      );
+      return;
+    }
+
+    logger.info("Sending bulk custom emails via multipart", {
+      recipientCount: recipientList.length,
+      subject,
+      attachmentCount: attachments.length,
+    });
+
+    // Send bulk emails
+    const results = await CustomEmailService.sendBulkCustomEmail(emailRequest);
+
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
+
+    logger.info("Bulk custom emails via multipart completed", {
+      total: results.length,
+      success: successCount,
+      failed: failCount,
+    });
+
+    ResponseHelper.success(
+      res,
+      {
+        total: results.length,
+        success: successCount,
+        failed: failCount,
+        attachments: attachments.map((a) => ({
+          filename: a.filename,
+          size: req.files
+            ? (req.files as Express.Multer.File[]).find(
+                (f) => f.originalname === a.filename,
+              )?.size
+            : 0,
+        })),
+        results: results.map((r) => ({
+          email: r.recipients.to[0],
+          success: r.success,
+          messageId: r.messageId,
+          error: r.error,
+        })),
+      },
+      `Bulk emails sent: ${successCount} successful, ${failCount} failed`,
+    );
+  } catch (error) {
+    logger.error("Error sending bulk custom emails via multipart:", error);
+    ResponseHelper.internalError(res, "Failed to send bulk custom emails");
   }
 };
 
@@ -162,7 +435,7 @@ export const previewCustomEmail = async (
     const validation = CustomEmailService.validateRequest(request);
 
     if (!validation.valid) {
-      ResponseHelper.error(
+      ResponseHelper.badRequest(
         res,
         `Validation failed: ${validation.errors.join(", ")}`,
       );
@@ -198,6 +471,6 @@ export const previewCustomEmail = async (
     );
   } catch (error) {
     logger.error("Error previewing custom email:", error);
-    ResponseHelper.error(res, "Failed to preview custom email");
+    ResponseHelper.internalError(res, "Failed to preview custom email");
   }
 };

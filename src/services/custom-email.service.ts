@@ -7,18 +7,28 @@ import {
 import { AttachmentService } from "./attachment.service";
 import { TemplateAttachment } from "../types/template.types";
 import logger from "../utils/logger";
-import nodemailer from "nodemailer";
+import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
+import axios from "axios";
+
+interface ProcessedAttachment {
+  filename: string;
+  content?: Buffer;
+  path?: string;
+  contentType?: string;
+}
 
 export class CustomEmailService {
-  private static transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_SECURE === "true",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+  private static transporter: Transporter<SentMessageInfo> =
+    nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    } as SMTPTransport.Options);
 
   private static defaultFrom =
     process.env.DEFAULT_FROM_EMAIL || "noreply@example.com";
@@ -141,12 +151,12 @@ export class CustomEmailService {
    */
   private static async processAttachments(
     attachments?: TemplateAttachment[],
-  ): Promise<any[]> {
+  ): Promise<ProcessedAttachment[]> {
     if (!attachments || attachments.length === 0) {
       return [];
     }
 
-    const processedAttachments: any[] = [];
+    const processedAttachments: ProcessedAttachment[] = [];
 
     for (const attachment of attachments) {
       try {
@@ -170,15 +180,15 @@ export class CustomEmailService {
           });
         } else if (attachment.url) {
           // URL - download first
-          const axios = require("axios");
-          const response = await axios.get(attachment.url, {
+          const response = await axios.get<ArrayBuffer>(attachment.url, {
             responseType: "arraybuffer",
           });
           processedAttachments.push({
             filename: attachment.filename,
             content: Buffer.from(response.data),
             contentType:
-              attachment.contentType || response.headers["content-type"],
+              attachment.contentType ||
+              (response.headers["content-type"] as string),
           });
         }
       } catch (error) {

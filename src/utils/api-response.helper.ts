@@ -37,7 +37,7 @@ export class ResponseHelper {
     data: T,
     message: string = "Success",
     statusCode: number = HttpStatus.OK,
-    meta?: ResponseMeta
+    meta?: ResponseMeta,
   ): void {
     const response: SuccessResponse<T> = {
       success: true,
@@ -57,7 +57,7 @@ export class ResponseHelper {
   static created<T>(
     res: Response,
     data: T,
-    message: string = "Resource created successfully"
+    message: string = "Resource created successfully",
   ): void {
     this.success(res, data, message, HttpStatus.CREATED);
   }
@@ -67,7 +67,7 @@ export class ResponseHelper {
    */
   static accepted(
     res: Response,
-    message: string = "Request accepted for processing"
+    message: string = "Request accepted for processing",
   ): void {
     const response: SuccessResponse<null> = {
       success: true,
@@ -93,7 +93,7 @@ export class ResponseHelper {
     res: Response,
     data: T[],
     meta: ResponseMeta,
-    message: string = "Success"
+    message: string = "Success",
   ): void {
     const response: SuccessResponse<T[]> = {
       success: true,
@@ -114,7 +114,7 @@ export class ResponseHelper {
     res: Response,
     message: string,
     statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR,
-    errors?: ValidationError[]
+    errors?: ValidationError[],
   ): void {
     const response: ErrorResponse = {
       success: false,
@@ -144,7 +144,7 @@ export class ResponseHelper {
   static badRequest(
     res: Response,
     message: string = "Bad request",
-    errors?: ValidationError[]
+    errors?: ValidationError[],
   ): void {
     this.error(res, message, HttpStatus.BAD_REQUEST, errors);
   }
@@ -154,7 +154,7 @@ export class ResponseHelper {
    */
   static unauthorized(
     res: Response,
-    message: string = "Unauthorized. Please login first."
+    message: string = "Unauthorized. Please login first.",
   ): void {
     this.error(res, message, HttpStatus.UNAUTHORIZED);
   }
@@ -164,7 +164,7 @@ export class ResponseHelper {
    */
   static forbidden(
     res: Response,
-    message: string = "Access denied. Insufficient permissions."
+    message: string = "Access denied. Insufficient permissions.",
   ): void {
     this.error(res, message, HttpStatus.FORBIDDEN);
   }
@@ -181,7 +181,7 @@ export class ResponseHelper {
    */
   static conflict(
     res: Response,
-    message: string = "Resource already exists"
+    message: string = "Resource already exists",
   ): void {
     this.error(res, message, HttpStatus.CONFLICT);
   }
@@ -192,7 +192,7 @@ export class ResponseHelper {
   static validationError(
     res: Response,
     errors: ValidationError[],
-    message: string = "Validation failed"
+    message: string = "Validation failed",
   ): void {
     this.error(res, message, HttpStatus.UNPROCESSABLE_ENTITY, errors);
   }
@@ -202,7 +202,7 @@ export class ResponseHelper {
    */
   static tooManyRequests(
     res: Response,
-    message: string = "Too many requests. Please try again later."
+    message: string = "Too many requests. Please try again later.",
   ): void {
     this.error(res, message, HttpStatus.TOO_MANY_REQUESTS);
   }
@@ -212,7 +212,7 @@ export class ResponseHelper {
    */
   static internalError(
     res: Response,
-    message: string = "Internal server error"
+    message: string = "Internal server error",
   ): void {
     this.error(res, message, HttpStatus.INTERNAL_SERVER_ERROR);
   }
@@ -222,7 +222,7 @@ export class ResponseHelper {
    */
   static serviceUnavailable(
     res: Response,
-    message: string = "Service temporarily unavailable"
+    message: string = "Service temporarily unavailable",
   ): void {
     this.error(res, message, HttpStatus.SERVICE_UNAVAILABLE);
   }

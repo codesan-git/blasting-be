@@ -4,7 +4,10 @@ import {
   sendCustomEmail,
   sendBulkCustomEmail,
   previewCustomEmail,
+  sendCustomEmailMultipart,
+  sendBulkCustomEmailMultipart,
 } from "../controllers/custom-email.controller";
+import { uploadMultiple } from "../config/multer.config";
 
 const router = Router();
 
@@ -28,5 +31,8 @@ router.post("/send-bulk", sendBulkCustomEmail);
  * @access  Private
  */
 router.post("/preview", previewCustomEmail);
+
+router.post("/send-multipart", uploadMultiple, sendCustomEmailMultipart);
+router.post("/send-bulk-multipart", uploadMultiple, sendBulkCustomEmailMultipart);
 
 export default router;
