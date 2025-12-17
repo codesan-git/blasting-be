@@ -6,7 +6,9 @@ import { TemplateAttachment } from "../types/template.types";
 import logger from "../utils/logger";
 
 export class AttachmentService {
-  private static uploadDir = process.env.UPLOAD_DIR || "./uploads/attachments";
+  private static uploadDir = process.env.UPLOAD_DIR 
+    ? path.resolve(process.env.UPLOAD_DIR)
+    : path.join(process.cwd(), "uploads", "attachments");
 
   /**
    * Initialize upload directory

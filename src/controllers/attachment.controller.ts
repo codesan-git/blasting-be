@@ -1,5 +1,6 @@
 // src/controllers/attachment.controller.ts
 import { Request, Response } from "express";
+import path from "path";
 import { AttachmentService } from "../services/attachment.service";
 import logger from "../utils/logger";
 import ResponseHelper from "../utils/api-response.helper";
@@ -153,8 +154,10 @@ export const deleteAttachment = async (
 ): Promise<void> => {
   try {
     const { filename } = req.params;
-    const uploadDir = process.env.UPLOAD_DIR || "./uploads/attachments";
-    const filePath = `${uploadDir}/${filename}`;
+    const uploadDir = process.env.UPLOAD_DIR 
+      ? path.resolve(process.env.UPLOAD_DIR)
+      : path.join(process.cwd(), "uploads", "attachments");
+    const filePath = path.join(uploadDir, filename);
 
     await AttachmentService.deleteFile(filePath);
 

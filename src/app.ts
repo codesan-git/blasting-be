@@ -62,8 +62,11 @@ console.log("🚀 Bull Board aktif di mode development: /admin/queues");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files for uploads
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Serve static files for uploads - use same path as upload directory
+const uploadBaseDir = process.env.UPLOAD_DIR 
+  ? path.dirname(path.resolve(process.env.UPLOAD_DIR))
+  : path.join(process.cwd(), "uploads");
+app.use("/uploads", express.static(uploadBaseDir));
 
 // Trust proxy - important for rate limiting behind reverse proxy
 app.set("trust proxy", 1);

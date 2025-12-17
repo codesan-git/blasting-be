@@ -17,6 +17,7 @@ console.log("");
 
 import app from "./app";
 import logger from "./utils/logger";
+import path from "path";
 import { emailWorker } from "./workers/email.worker";
 import { messageWorker } from "./workers/message.worker";
 import { createRedisConnection } from "./config/redis";
@@ -123,8 +124,12 @@ const registerQiscusWebhook = async () => {
 const initAttachmentStorage = async () => {
   try {
     await AttachmentService.init();
+    // Get the actual path used (absolute path) - same logic as AttachmentService
+    const uploadPath = process.env.UPLOAD_DIR 
+      ? path.resolve(process.env.UPLOAD_DIR)
+      : path.join(process.cwd(), "uploads", "attachments");
     logger.info("Attachment storage initialized", {
-      path: process.env.UPLOAD_DIR || "./uploads/attachments",
+      path: uploadPath,
       important: true,
     });
   } catch (error) {

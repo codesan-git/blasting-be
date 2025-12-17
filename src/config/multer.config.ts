@@ -5,11 +5,17 @@ import crypto from "crypto";
 import fs from "fs";
 import { Request } from "express";
 
-const uploadDir = process.env.UPLOAD_DIR || "./uploads/attachments";
+// Use absolute path to ensure consistency
+const uploadDir = process.env.UPLOAD_DIR 
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(process.cwd(), "uploads", "attachments");
 
 // Ensure upload directory exists
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
+  console.log(`📁 Created upload directory: ${uploadDir}`);
+} else {
+  console.log(`📁 Using upload directory: ${uploadDir}`);
 }
 
 // Configure storage
@@ -24,6 +30,8 @@ const storage = multer.diskStorage({
     const ext = path.extname(file.originalname);
     const nameWithoutExt = path.basename(file.originalname, ext);
     const uniqueName = `${timestamp}-${hash}-${nameWithoutExt}${ext}`;
+    const fullPath = path.join(uploadDir, uniqueName);
+    console.log(`💾 File will be saved to: ${fullPath}`);
     cb(null, uniqueName);
   },
 });
