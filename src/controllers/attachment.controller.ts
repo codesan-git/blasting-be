@@ -5,15 +5,105 @@ import logger from "../utils/logger";
 import ResponseHelper from "../utils/api-response.helper";
 
 /**
- * Upload attachment (base64)
+ * Upload single attachment (multipart/form-data)
  * POST /api/attachments/upload
+ * Form data: file (single file)
+ */
+export const uploadAttachment = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.file) {
+      ResponseHelper.error(res, "No file uploaded");
+      return;
+    }
+
+    const file = req.file;
+
+    logger.info("File uploaded successfully", {
+      filename: file.filename,
+      originalName: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+    });
+
+    ResponseHelper.success(
+      res,
+      {
+        filename: file.originalname,
+        savedAs: file.filename,
+        path: file.path,
+        size: file.size,
+        mimetype: file.mimetype,
+        url: `/uploads/attachments/${file.filename}`, // Public URL
+      },
+      "File uploaded successfully",
+    );
+  } catch (error) {
+    logger.error("Error uploading file:", error);
+    ResponseHelper.error(
+      res,
+      error instanceof Error ? error.message : "Failed to upload file",
+    );
+  }
+};
+
+/**
+ * Upload multiple attachments (multipart/form-data)
+ * POST /api/attachments/upload-multiple
+ * Form data: files (multiple files)
+ */
+export const uploadMultipleAttachments = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      ResponseHelper.error(res, "No files uploaded");
+      return;
+    }
+
+    const files = req.files as Express.Multer.File[];
+
+    const uploadedFiles = files.map((file) => ({
+      filename: file.originalname,
+      savedAs: file.filename,
+      path: file.path,
+      size: file.size,
+      mimetype: file.mimetype,
+      url: `/uploads/attachments/${file.filename}`,
+    }));
+
+    logger.info("Multiple files uploaded", {
+      count: files.length,
+      totalSize: files.reduce((sum, f) => sum + f.size, 0),
+    });
+
+    ResponseHelper.success(
+      res,
+      {
+        count: uploadedFiles.length,
+        files: uploadedFiles,
+      },
+      `${uploadedFiles.length} files uploaded successfully`,
+    );
+  } catch (error) {
+    logger.error("Error uploading multiple files:", error);
+    ResponseHelper.error(res, "Failed to upload files");
+  }
+};
+
+/**
+ * Upload attachment (base64) - LEGACY
+ * POST /api/attachments/upload-base64
  * Body: {
  *   filename: "document.pdf",
  *   content: "base64string...",
  *   contentType: "application/pdf"
  * }
  */
-export const uploadAttachment = async (
+export const uploadAttachmentBase64 = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -33,7 +123,7 @@ export const uploadAttachment = async (
       },
     );
 
-    logger.info("Attachment uploaded", { filename });
+    logger.info("Attachment uploaded (base64)", { filename });
 
     ResponseHelper.success(
       res,
@@ -50,53 +140,6 @@ export const uploadAttachment = async (
       res,
       error instanceof Error ? error.message : "Failed to upload attachment",
     );
-  }
-};
-
-/**
- * Upload multiple attachments
- * POST /api/attachments/upload-multiple
- * Body: {
- *   attachments: [
- *     { filename: "file1.pdf", content: "base64..." },
- *     { filename: "file2.png", content: "base64..." }
- *   ]
- * }
- */
-export const uploadMultipleAttachments = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { attachments } = req.body;
-
-    if (!Array.isArray(attachments) || attachments.length === 0) {
-      ResponseHelper.error(res, "attachments array is required");
-      return;
-    }
-
-    const savedAttachments =
-      await AttachmentService.saveMultipleBase64(attachments);
-
-    logger.info("Multiple attachments uploaded", {
-      count: savedAttachments.length,
-    });
-
-    ResponseHelper.success(
-      res,
-      {
-        count: savedAttachments.length,
-        attachments: savedAttachments.map((a) => ({
-          filename: a.filename,
-          path: a.path,
-          contentType: a.contentType,
-        })),
-      },
-      "Attachments uploaded successfully",
-    );
-  } catch (error) {
-    logger.error("Error uploading multiple attachments:", error);
-    ResponseHelper.error(res, "Failed to upload attachments");
   }
 };
 
