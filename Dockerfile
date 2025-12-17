@@ -37,7 +37,7 @@ ENV NODE_ENV=production \
 EXPOSE 3000
 
 # Create directories for persistent data
-RUN mkdir -p /app/logs /app/data /app/backups
+RUN mkdir -p /app/logs /app/data /app/backups /app/uploads/attachments
 
 # Command to run the app
 CMD ["node", "dist/index.js"]
