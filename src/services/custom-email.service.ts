@@ -8,7 +8,6 @@ import { AttachmentService } from "./attachment.service";
 import { TemplateAttachment } from "../types/template.types";
 import logger from "../utils/logger";
 import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
-import SMTPTransport from "nodemailer/lib/smtp-transport";
 import axios from "axios";
 
 interface ProcessedAttachment {
@@ -64,7 +63,9 @@ export class CustomEmailService {
       );
     }
 
-    const transportOptions: SMTPTransport.Options = {
+    // Use same approach as smtp.service.ts - let TypeScript infer the type
+    // This allows pool options that aren't in the official type definition
+    const transportOptions = {
       host: smtpHost,
       port: smtpPort,
       secure: smtpSecure,
@@ -85,7 +86,7 @@ export class CustomEmailService {
       // TLS options (important for Plesk certificate issues)
       tls: {
         rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false", // Default: true
-        minVersion: process.env.SMTP_TLS_MIN_VERSION || "TLSv1.2",
+        minVersion: (process.env.SMTP_TLS_MIN_VERSION || "TLSv1.2") as "TLSv1.3" | "TLSv1.2" | "TLSv1.1" | "TLSv1",
         ciphers: process.env.SMTP_TLS_CIPHERS || undefined,
       },
       // Debug mode (set SMTP_DEBUG=true to enable)
