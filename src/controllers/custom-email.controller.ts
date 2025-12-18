@@ -50,17 +50,53 @@ export const sendCustomEmail = async (
       logger.info("Custom email sent", {
         messageId: result.messageId,
         recipients: result.recipients.to,
+        smtpAccepted: result.smtpResponse?.accepted,
+        smtpRejected: result.smtpResponse?.rejected,
       });
 
-      ResponseHelper.success(
-        res,
-        {
-          messageId: result.messageId,
-          recipients: result.recipients,
-          scheduledAt: result.scheduledAt,
-        },
-        "Custom email sent successfully",
-      );
+      // Check if email was actually accepted by SMTP server
+      const acceptedCount = result.smtpResponse?.accepted?.length || 0;
+      const rejectedCount = result.smtpResponse?.rejected?.length || 0;
+      
+      if (acceptedCount === 0 && rejectedCount > 0) {
+        // Email was rejected by SMTP server
+        ResponseHelper.success(
+          res,
+          {
+            messageId: result.messageId,
+            recipients: result.recipients,
+            scheduledAt: result.scheduledAt,
+            smtpResponse: result.smtpResponse,
+            warning: "Email was rejected by SMTP server. Check smtpResponse for details.",
+          },
+          "Email request processed, but SMTP server rejected the email",
+        );
+      } else if (acceptedCount === 0) {
+        // No recipients accepted (unusual case)
+        ResponseHelper.success(
+          res,
+          {
+            messageId: result.messageId,
+            recipients: result.recipients,
+            scheduledAt: result.scheduledAt,
+            smtpResponse: result.smtpResponse,
+            warning: "No recipients were accepted by SMTP server. Check smtpResponse for details.",
+          },
+          "Email request processed, but no recipients were accepted",
+        );
+      } else {
+        // Success - email accepted
+        ResponseHelper.success(
+          res,
+          {
+            messageId: result.messageId,
+            recipients: result.recipients,
+            scheduledAt: result.scheduledAt,
+            smtpResponse: result.smtpResponse,
+          },
+          "Custom email sent successfully",
+        );
+      }
     } else {
       ResponseHelper.badRequest(res, result.error || "Failed to send custom email");
     }
@@ -180,7 +216,12 @@ export const sendCustomEmailMultipart = async (
         messageId: result.messageId,
         recipients: result.recipients.to,
         attachmentCount: attachments.length,
+        smtpAccepted: result.smtpResponse?.accepted,
+        smtpRejected: result.smtpResponse?.rejected,
       });
+
+      const acceptedCount = result.smtpResponse?.accepted?.length || 0;
+      const rejectedCount = result.smtpResponse?.rejected?.length || 0;
 
       ResponseHelper.success(
         res,
@@ -195,8 +236,14 @@ export const sendCustomEmailMultipart = async (
                 )?.size
               : 0,
           })),
+          smtpResponse: result.smtpResponse,
+          ...(acceptedCount === 0 ? {
+            warning: "Email was rejected by SMTP server. Check smtpResponse for details.",
+          } : {}),
         },
-        "Custom email sent successfully",
+        acceptedCount === 0 
+          ? "Email request processed, but SMTP server rejected the email"
+          : "Custom email sent successfully",
       );
     } else {
       ResponseHelper.badRequest(
@@ -277,6 +324,7 @@ export const sendBulkCustomEmail = async (
           success: r.success,
           messageId: r.messageId,
           error: r.error,
+          smtpResponse: r.smtpResponse,
         })),
       },
       `Bulk emails sent: ${successCount} successful, ${failCount} failed`,
@@ -413,6 +461,7 @@ export const sendBulkCustomEmailMultipart = async (
           success: r.success,
           messageId: r.messageId,
           error: r.error,
+          smtpResponse: r.smtpResponse,
         })),
       },
       `Bulk emails sent: ${successCount} successful, ${failCount} failed`,

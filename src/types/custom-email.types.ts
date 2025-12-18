@@ -28,4 +28,15 @@ export interface SendCustomEmailResponse {
   };
   scheduledAt?: Date;
   error?: string;
+  // SMTP server response details (for debugging)
+  smtpResponse?: {
+    accepted: string[];
+    rejected: string[];
+    response?: string;
+    responseCode?: number | string;
+    envelope?: {
+      from?: string;
+      to?: string[];
+    };
+  };
 }

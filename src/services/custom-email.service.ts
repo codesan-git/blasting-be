@@ -55,13 +55,29 @@ export class CustomEmailService {
       secure: smtpSecure,
       user: smtpUser,
       hasPassword: !!smtpPass,
+      passwordLength: smtpPass ? smtpPass.length : 0,
     });
 
-    if (!smtpUser || !smtpPass) {
+    // For port 25 (SMTP relay), authentication might not be required
+    // But we still need host and user for logging purposes
+    if (!smtpHost) {
       throw new Error(
-        "SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS environment variables.",
+        "SMTP_HOST is required. Please set SMTP_HOST environment variable.",
       );
     }
+
+    // Only require auth if password is provided (some SMTP relays don't need auth)
+    const authConfig = smtpUser && smtpPass
+      ? {
+          user: smtpUser,
+          pass: smtpPass,
+        }
+      : smtpUser
+        ? {
+            user: smtpUser,
+            pass: "", // Empty password for relay servers
+          }
+        : undefined;
 
     // Use same approach as smtp.service.ts - let TypeScript infer the type
     // This allows pool options that aren't in the official type definition
@@ -69,10 +85,8 @@ export class CustomEmailService {
       host: smtpHost,
       port: smtpPort,
       secure: smtpSecure,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
+      // Only add auth if credentials are provided
+      ...(authConfig ? { auth: authConfig } : {}),
       // Connection pooling (same as smtp.service.ts - important for Plesk!)
       pool: true, // Use pooled connections
       maxConnections: 5, // Max concurrent connections
@@ -341,30 +355,60 @@ export class CustomEmailService {
         attachments: processedAttachments,
       };
 
+      // Log email details before sending
+      const bodySize = Buffer.byteLength(request.body, 'utf8');
       logger.info("Attempting to send custom email", {
         from: mailOptions.from,
         to: request.to.map((r) => r.email),
         subject: request.subject,
         attachmentCount: processedAttachments.length,
+        bodySizeBytes: bodySize,
+        bodySizeKB: Math.round(bodySize / 1024 * 100) / 100,
+        hasCC: !!request.cc && request.cc.length > 0,
+        hasBCC: !!request.bcc && request.bcc.length > 0,
+        hasReplyTo: !!request.replyTo,
       });
 
       // Send email
       const info = await transporter.sendMail(mailOptions);
 
+      // Log detailed response from SMTP server
       logger.info("Custom email sent successfully", {
         messageId: info.messageId,
         recipients: request.to.map((r) => r.email),
         subject: request.subject,
-        accepted: info.accepted,
-        rejected: info.rejected,
-        response: info.response,
+        accepted: info.accepted || [],
+        rejected: info.rejected || [],
+        response: info.response || "No response",
+        responseCode: info.responseCode || "No code",
+        envelope: info.envelope || {},
+        // Log full info object for debugging
+        fullInfo: JSON.stringify({
+          messageId: info.messageId,
+          accepted: info.accepted,
+          rejected: info.rejected,
+          response: info.response,
+          responseCode: info.responseCode,
+          envelope: info.envelope,
+        }),
       });
 
       // Check if email was actually accepted
       if (info.rejected && info.rejected.length > 0) {
-        logger.warn("Some recipients were rejected", {
+        logger.warn("Some recipients were rejected by SMTP server", {
           rejected: info.rejected,
           accepted: info.accepted,
+          response: info.response,
+        });
+      }
+
+      // Check if accepted array is empty (email might not be accepted)
+      if (!info.accepted || info.accepted.length === 0) {
+        logger.error("Email was not accepted by SMTP server", {
+          messageId: info.messageId,
+          rejected: info.rejected,
+          response: info.response,
+          responseCode: info.responseCode,
         });
       }
 
@@ -377,6 +421,13 @@ export class CustomEmailService {
           bcc: request.bcc?.map((r) => r.email),
         },
         scheduledAt: request.scheduledAt,
+        smtpResponse: {
+          accepted: info.accepted || [],
+          rejected: info.rejected || [],
+          response: info.response || undefined,
+          responseCode: info.responseCode || undefined,
+          envelope: info.envelope || undefined,
+        },
       };
     } catch (error) {
       // Enhanced error logging for Plesk debugging
