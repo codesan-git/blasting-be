@@ -19,19 +19,89 @@ interface ProcessedAttachment {
 }
 
 export class CustomEmailService {
-  private static transporter: Transporter<SentMessageInfo> =
-    nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    } as SMTPTransport.Options);
+  private static transporter: Transporter<SentMessageInfo> | null = null;
 
   private static defaultFrom =
     process.env.DEFAULT_FROM_EMAIL || "noreply@example.com";
+
+  /**
+   * Reset transporter (useful when configuration changes)
+   */
+  static resetTransporter(): void {
+    if (this.transporter) {
+      this.transporter.close();
+      this.transporter = null;
+      logger.info("SMTP transporter reset");
+    }
+  }
+
+  /**
+   * Initialize or get transporter instance
+   */
+  private static getTransporter(): Transporter<SentMessageInfo> {
+    if (this.transporter) {
+      return this.transporter;
+    }
+
+    const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+    const smtpPort = parseInt(process.env.SMTP_PORT || "587");
+    const smtpSecure = process.env.SMTP_SECURE === "true";
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+
+    // Log configuration (without password)
+    logger.info("Initializing SMTP transporter", {
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      user: smtpUser,
+      hasPassword: !!smtpPass,
+    });
+
+    if (!smtpUser || !smtpPass) {
+      throw new Error(
+        "SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS environment variables.",
+      );
+    }
+
+    const transportOptions: SMTPTransport.Options = {
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+      // Connection pooling (same as smtp.service.ts - important for Plesk!)
+      pool: true, // Use pooled connections
+      maxConnections: 5, // Max concurrent connections
+      maxMessages: 100, // Max messages per connection
+      rateDelta: 1000, // 1 second
+      rateLimit: 5, // Max 5 emails per rateDelta
+      // Connection timeout settings (important for Plesk)
+      connectionTimeout: parseInt(process.env.SMTP_CONNECTION_TIMEOUT || "10000"), // 10 seconds
+      greetingTimeout: parseInt(process.env.SMTP_GREETING_TIMEOUT || "5000"), // 5 seconds
+      socketTimeout: parseInt(process.env.SMTP_SOCKET_TIMEOUT || "30000"), // 30 seconds
+      // TLS options (important for Plesk certificate issues)
+      tls: {
+        rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false", // Default: true
+        minVersion: process.env.SMTP_TLS_MIN_VERSION || "TLSv1.2",
+        ciphers: process.env.SMTP_TLS_CIPHERS || undefined,
+      },
+      // Debug mode (set SMTP_DEBUG=true to enable)
+      debug: process.env.SMTP_DEBUG === "true",
+      logger: process.env.SMTP_DEBUG === "true",
+    };
+
+    this.transporter = nodemailer.createTransport(transportOptions);
+
+    logger.info("SMTP transporter created successfully", {
+      host: smtpHost,
+      port: smtpPort,
+    });
+
+    return this.transporter;
+  }
 
   /**
    * Validate email address format
@@ -212,6 +282,24 @@ export class CustomEmailService {
   }
 
   /**
+   * Verify SMTP connection before sending
+   */
+  private static async verifyConnection(): Promise<boolean> {
+    try {
+      const transporter = this.getTransporter();
+      await transporter.verify();
+      logger.info("SMTP connection verified successfully");
+      return true;
+    } catch (error) {
+      logger.error("SMTP connection verification failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      return false;
+    }
+  }
+
+  /**
    * Send custom email
    */
   static async sendCustomEmail(
@@ -232,6 +320,9 @@ export class CustomEmailService {
         };
       }
 
+      // Get transporter (will initialize if needed)
+      const transporter = this.getTransporter();
+
       // Process attachments
       const processedAttachments = await this.processAttachments(
         request.attachments,
@@ -249,14 +340,32 @@ export class CustomEmailService {
         attachments: processedAttachments,
       };
 
+      logger.info("Attempting to send custom email", {
+        from: mailOptions.from,
+        to: request.to.map((r) => r.email),
+        subject: request.subject,
+        attachmentCount: processedAttachments.length,
+      });
+
       // Send email
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
 
       logger.info("Custom email sent successfully", {
         messageId: info.messageId,
         recipients: request.to.map((r) => r.email),
         subject: request.subject,
+        accepted: info.accepted,
+        rejected: info.rejected,
+        response: info.response,
       });
+
+      // Check if email was actually accepted
+      if (info.rejected && info.rejected.length > 0) {
+        logger.warn("Some recipients were rejected", {
+          rejected: info.rejected,
+          accepted: info.accepted,
+        });
+      }
 
       return {
         success: true,
@@ -269,9 +378,30 @@ export class CustomEmailService {
         scheduledAt: request.scheduledAt,
       };
     } catch (error) {
+      // Enhanced error logging for Plesk debugging
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      // Check for common Plesk/SMTP issues
+      let detailedError = errorMessage;
+      if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("ETIMEDOUT")) {
+        detailedError = `Connection failed: ${errorMessage}. Check if Plesk firewall allows outbound SMTP connections on port ${process.env.SMTP_PORT || "587"}`;
+      } else if (errorMessage.includes("self signed certificate") || errorMessage.includes("certificate")) {
+        detailedError = `TLS/SSL certificate error: ${errorMessage}. Try setting SMTP_TLS_REJECT_UNAUTHORIZED=false in .env (for testing only)`;
+      } else if (errorMessage.includes("authentication") || errorMessage.includes("535")) {
+        detailedError = `Authentication failed: ${errorMessage}. Verify SMTP_USER and SMTP_PASS are correct`;
+      } else if (errorMessage.includes("greeting") || errorMessage.includes("timeout")) {
+        detailedError = `Connection timeout: ${errorMessage}. Check SMTP host/port and firewall settings`;
+      }
+
       logger.error("Failed to send custom email", {
-        error,
+        error: detailedError,
+        originalError: errorMessage,
+        stack: errorStack,
         recipients: request.to.map((r) => r.email),
+        smtpHost: process.env.SMTP_HOST,
+        smtpPort: process.env.SMTP_PORT,
+        smtpUser: process.env.SMTP_USER,
       });
 
       return {
@@ -281,7 +411,7 @@ export class CustomEmailService {
           cc: request.cc?.map((r) => r.email),
           bcc: request.bcc?.map((r) => r.email),
         },
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: detailedError,
       };
     }
   }
@@ -308,5 +438,95 @@ export class CustomEmailService {
     }
 
     return results;
+  }
+
+  /**
+   * Test SMTP connection and configuration
+   */
+  static async testConnection(): Promise<{
+    success: boolean;
+    message: string;
+    details?: any;
+  }> {
+    try {
+      // Check if credentials are configured
+      const smtpHost = process.env.SMTP_HOST;
+      const smtpPort = process.env.SMTP_PORT;
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPass = process.env.SMTP_PASS;
+
+      if (!smtpHost || !smtpUser || !smtpPass) {
+        return {
+          success: false,
+          message: "SMTP credentials not configured",
+          details: {
+            hasHost: !!smtpHost,
+            hasUser: !!smtpUser,
+            hasPass: !!smtpPass,
+          },
+        };
+      }
+
+      // Try to get transporter (will initialize if needed)
+      const transporter = this.getTransporter();
+
+      // Verify connection
+      await transporter.verify();
+
+      return {
+        success: true,
+        message: "SMTP connection successful",
+        details: {
+          host: smtpHost,
+          port: smtpPort || "587",
+          user: smtpUser,
+          secure: process.env.SMTP_SECURE === "true",
+        },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
+      // Provide helpful error messages
+      let message = "SMTP connection test failed";
+      if (errorMessage.includes("ECONNREFUSED")) {
+        message = "Cannot connect to SMTP server. Check host/port and firewall settings.";
+      } else if (errorMessage.includes("ETIMEDOUT")) {
+        message = "Connection timeout. Check if Plesk firewall allows outbound SMTP connections.";
+      } else if (errorMessage.includes("authentication") || errorMessage.includes("535")) {
+        message = "Authentication failed. Verify SMTP_USER and SMTP_PASS are correct.";
+      } else if (errorMessage.includes("certificate")) {
+        message = "TLS/SSL certificate error. Try setting SMTP_TLS_REJECT_UNAUTHORIZED=false (for testing only).";
+      }
+
+      return {
+        success: false,
+        message: `${message}: ${errorMessage}`,
+        details: {
+          error: errorMessage,
+          host: process.env.SMTP_HOST,
+          port: process.env.SMTP_PORT,
+          user: process.env.SMTP_USER,
+        },
+      };
+    }
+  }
+
+  /**
+   * Get SMTP configuration status
+   */
+  static getStatus(): {
+    configured: boolean;
+    host?: string;
+    port?: string;
+    user?: string;
+    secure?: boolean;
+  } {
+    return {
+      configured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS),
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      secure: process.env.SMTP_SECURE === "true",
+    };
   }
 }

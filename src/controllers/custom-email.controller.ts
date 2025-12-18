@@ -94,6 +94,8 @@ export const sendCustomEmailMultipart = async (
   res: Response,
 ): Promise<void> => {
   try {
+    // Handle case where req.body might be undefined with multipart/form-data
+    const body = req.body || {};
     const {
       from,
       to,
@@ -104,11 +106,11 @@ export const sendCustomEmailMultipart = async (
       bccName,
       replyTo,
       subject,
-      body,
-    } = req.body;
+      body: emailBody,
+    } = body;
 
     // Validate required fields
-    if (!to || !subject || !body) {
+    if (!to || !subject || !emailBody) {
       ResponseHelper.badRequest(
         res,
         "Required fields: to, subject, body",
@@ -156,7 +158,7 @@ export const sendCustomEmailMultipart = async (
       bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
       replyTo: replyTo || undefined,
       subject,
-      body,
+      body: emailBody,
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
@@ -301,10 +303,12 @@ export const sendBulkCustomEmailMultipart = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { from, recipients, subject, body, replyTo } = req.body;
+    // Handle case where req.body might be undefined with multipart/form-data
+    const body = req.body || {};
+    const { from, recipients, subject, body: emailBody, replyTo } = body;
 
     // Validate required fields
-    if (!recipients || !subject || !body) {
+    if (!recipients || !subject || !emailBody) {
       ResponseHelper.badRequest(
         res,
         "Required fields: recipients, subject, body",
@@ -358,7 +362,7 @@ export const sendBulkCustomEmailMultipart = async (
       to: recipientList,
       replyTo: replyTo || undefined,
       subject,
-      body,
+      body: emailBody,
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
@@ -472,5 +476,47 @@ export const previewCustomEmail = async (
   } catch (error) {
     logger.error("Error previewing custom email:", error);
     ResponseHelper.internalError(res, "Failed to preview custom email");
+  }
+};
+
+/**
+ * Test SMTP connection
+ * GET /api/custom-emails/test-connection
+ */
+export const testSMTPConnection = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const result = await CustomEmailService.testConnection();
+    
+    if (result.success) {
+      ResponseHelper.success(res, result.details, result.message);
+    } else {
+      ResponseHelper.badRequest(res, result.message, result.details);
+    }
+  } catch (error) {
+    logger.error("Error testing SMTP connection:", error);
+    ResponseHelper.internalError(
+      res,
+      error instanceof Error ? error.message : "Failed to test SMTP connection",
+    );
+  }
+};
+
+/**
+ * Get SMTP status
+ * GET /api/custom-emails/smtp-status
+ */
+export const getSMTPStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const status = CustomEmailService.getStatus();
+    ResponseHelper.success(res, status, "SMTP status retrieved successfully");
+  } catch (error) {
+    logger.error("Error getting SMTP status:", error);
+    ResponseHelper.internalError(res, "Failed to get SMTP status");
   }
 };

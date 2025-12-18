@@ -391,6 +391,232 @@ sudo ufw allow out 465/tcp
 # 5. Add unsubscribe link (for marketing)
 ```
 
+### Problem: Email API Succeeds But Emails Not Sent (Plesk)
+
+**Symptom:** API returns success (200 OK) but emails are never received. Works fine on VPS but fails on Plesk.
+
+**Common Causes:**
+
+1. **Plesk Firewall blocking outbound SMTP**
+2. **Environment variables not loaded correctly**
+3. **TLS/SSL certificate validation issues**
+4. **Network restrictions in Plesk**
+
+**Solutions:**
+
+#### Step 1: Test SMTP Connection
+
+```bash
+# Test SMTP connection via API
+curl -X GET http://your-domain.com/api/custom-emails/test-connection \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Or check status
+curl -X GET http://your-domain.com/api/custom-emails/smtp-status \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Step 2: Check Environment Variables in Plesk
+
+Plesk may not load `.env` file automatically. Check:
+
+1. **In Plesk Panel:**
+   - Go to **Domains** → Your Domain → **Node.js**
+   - Check **Environment Variables** section
+   - Ensure all SMTP variables are set:
+     - `SMTP_HOST`
+     - `SMTP_PORT`
+     - `SMTP_SECURE`
+     - `SMTP_USER`
+     - `SMTP_PASS`
+
+2. **Or set in Plesk Node.js Environment:**
+   ```bash
+   # In Plesk Node.js settings, add:
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   ```
+
+#### Step 3: Configure Plesk Firewall
+
+Plesk may block outbound SMTP connections:
+
+1. **In Plesk Panel:**
+   - Go to **Tools & Settings** → **Firewall**
+   - Add outbound rule for SMTP ports:
+     - Port **587** (STARTTLS)
+     - Port **465** (SSL)
+     - Port **25** (if needed)
+
+2. **Or via SSH:**
+   ```bash
+   # Check if port is blocked
+   telnet smtp.gmail.com 587
+   
+   # If connection fails, allow outbound SMTP
+   # In Plesk Firewall settings, allow:
+   # - Outbound TCP 587
+   # - Outbound TCP 465
+   ```
+
+#### Step 4: Handle TLS/SSL Certificate Issues
+
+If you see certificate errors:
+
+```bash
+# Add to .env or Plesk environment variables:
+SMTP_TLS_REJECT_UNAUTHORIZED=false  # For testing only!
+SMTP_TLS_MIN_VERSION=TLSv1.2
+```
+
+**⚠️ Warning:** Only use `SMTP_TLS_REJECT_UNAUTHORIZED=false` for testing. In production, fix certificate issues properly.
+
+#### Step 5: Increase Connection Timeouts
+
+Plesk may have slower network, increase timeouts:
+
+```bash
+# Add to .env or Plesk environment variables:
+SMTP_CONNECTION_TIMEOUT=20000  # 20 seconds (default: 10s)
+SMTP_GREETING_TIMEOUT=10000    # 10 seconds (default: 5s)
+SMTP_SOCKET_TIMEOUT=60000      # 60 seconds (default: 30s)
+```
+
+#### Step 6: Enable Debug Logging
+
+Enable detailed SMTP logging:
+
+```bash
+# Add to .env or Plesk environment variables:
+SMTP_DEBUG=true
+LOG_LEVEL=debug
+```
+
+Then check logs in Plesk:
+- **Node.js** → **Logs** → View application logs
+- Look for SMTP connection attempts and errors
+
+#### Step 7: Test with Different SMTP Provider
+
+If Gmail doesn't work, try alternative:
+
+```bash
+# Option 1: Use port 465 (SSL) instead of 587
+SMTP_PORT=465
+SMTP_SECURE=true
+
+# Option 2: Try SendGrid
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=apikey
+SMTP_PASS=SG.your-sendgrid-api-key
+```
+
+#### Step 8: Verify Email Actually Sent
+
+Check if email was accepted by SMTP server:
+
+```bash
+# Send test email and check response
+curl -X POST http://your-domain.com/api/custom-emails/send \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "to": [{"email": "test@example.com"}],
+    "subject": "Test Email",
+    "body": "<p>Test</p>"
+  }'
+
+# Check logs for:
+# - "accepted" array (should contain recipient email)
+# - "rejected" array (should be empty)
+# - "response" field (should be "250 OK")
+```
+
+#### Step 9: Check Plesk Mail Server Conflicts
+
+Plesk may have its own mail server that conflicts:
+
+1. **Disable Plesk Mail Server** (if not using):
+   - Go to **Mail** → **Mail Settings**
+   - Disable mail server if you're using external SMTP
+
+2. **Or configure Plesk to use external SMTP**:
+   - Go to **Mail** → **Mail Settings**
+   - Set **Outgoing Mail Mode** to **SMTP**
+   - Configure SMTP settings
+
+#### Quick Diagnostic Checklist
+
+```bash
+# 1. Check if environment variables are loaded
+curl http://your-domain.com/api/custom-emails/smtp-status
+
+# 2. Test SMTP connection
+curl http://your-domain.com/api/custom-emails/test-connection
+
+# 3. Check application logs in Plesk
+# Plesk → Node.js → Logs
+
+# 4. Test from server directly (SSH)
+telnet smtp.gmail.com 587
+
+# 5. Verify firewall allows outbound SMTP
+# Plesk → Tools & Settings → Firewall
+```
+
+#### Common Plesk-Specific Errors
+
+**Error: `ECONNREFUSED`**
+- **Cause:** Plesk firewall blocking outbound SMTP
+- **Fix:** Allow outbound TCP 587/465 in Plesk Firewall
+
+**Error: `ETIMEDOUT`**
+- **Cause:** Network timeout or firewall blocking
+- **Fix:** Increase timeouts and check firewall
+
+**Error: `self signed certificate`**
+- **Cause:** TLS certificate validation failing
+- **Fix:** Set `SMTP_TLS_REJECT_UNAUTHORIZED=false` (testing only)
+
+**Error: API succeeds but no email received**
+- **Cause:** Email accepted by SMTP but not delivered
+- **Fix:** Check SMTP server logs, verify recipient email, check spam folder
+
+### Problem: Template Email Works But Custom Email Fails
+
+**Symptom:** Template-based emails (via `/api/messages/blast`) work fine, but custom emails (via `/api/custom-emails/send`) fail in Plesk.
+
+**Cause:** Both services now use the same SMTP configuration with connection pooling. If this issue persists:
+
+1. **Check if both use same SMTP service:**
+   ```bash
+   # Template emails use: smtpService (smtp.service.ts)
+   # Custom emails use: CustomEmailService (custom-email.service.ts)
+   # Both now have identical configuration including connection pooling
+   ```
+
+2. **Verify custom email service configuration:**
+   ```bash
+   # Test custom email SMTP connection
+   curl -X GET http://your-domain.com/api/custom-emails/test-connection \
+     -H "Authorization: Bearer YOUR_TOKEN"
+   ```
+
+3. **Check logs for differences:**
+   - Template emails: Check `message.worker.ts` logs
+   - Custom emails: Check `custom-email.service.ts` logs
+   - Look for different error messages
+
+4. **Ensure both services initialized correctly:**
+   - Both should use same environment variables
+   - Both should have connection pooling enabled
+   - Both should use same timeout settings
+
 ---
 
 ## 🔴 WhatsApp/Qiscus Issues

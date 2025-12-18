@@ -6,6 +6,8 @@ import {
   previewCustomEmail,
   sendCustomEmailMultipart,
   sendBulkCustomEmailMultipart,
+  testSMTPConnection,
+  getSMTPStatus,
 } from "../controllers/custom-email.controller";
 import { uploadMultiple } from "../config/multer.config";
 
@@ -31,6 +33,20 @@ router.post("/send-bulk", sendBulkCustomEmail);
  * @access  Private
  */
 router.post("/preview", previewCustomEmail);
+
+/**
+ * @route   GET /api/custom-emails/test-connection
+ * @desc    Test SMTP connection and configuration
+ * @access  Private
+ */
+router.get("/test-connection", testSMTPConnection);
+
+/**
+ * @route   GET /api/custom-emails/smtp-status
+ * @desc    Get SMTP configuration status
+ * @access  Private
+ */
+router.get("/smtp-status", getSMTPStatus);
 
 router.post("/send-multipart", uploadMultiple, sendCustomEmailMultipart);
 router.post("/send-bulk-multipart", uploadMultiple, sendBulkCustomEmailMultipart);
