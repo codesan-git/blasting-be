@@ -127,9 +127,9 @@ const defaultTemplates: Template[] = [
     subject: "Pembayaran Trial Class MNS Berhasil",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Kami informasikan bahwa pembayaran Trial Class untuk Ananda <strong>{{name}}</strong> telah berhasil kami terima dengan detail sebagai berikut.</p>
+      <p>Kami informasikan bahwa pembayaran Trial Class untuk <strong>{{name}}</strong> telah berhasil kami terima dengan detail sebagai berikut.</p>
 
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
@@ -188,12 +188,12 @@ const defaultTemplates: Template[] = [
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #004085;">
-          ℹ️ Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> sedang kami persiapkan. Kami akan segera menginformasikan kembali begitu jadwal tersedia.
+          ℹ️ Jadwal Trial Class untuk <strong>{{name}}</strong> sedang kami persiapkan. Kami akan segera menginformasikan kembali begitu jadwal tersedia.
         </p>
       </div>
 
       <p style="font-size: 16px; line-height: 1.6;">
-        Kami sangat menantikan kehadiran Ananda di Trial Class MNS. Sampai jumpa dan rasakan pengalaman belajar yang menyenangkan bersama MNS! 🎓✨
+        Kami sangat menantikan kehadiran <strong>{{name}}</strong> di Trial Class MNS. Sampai jumpa dan rasakan pengalaman belajar yang menyenangkan bersama MNS! 🎓✨
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
@@ -287,11 +287,11 @@ const defaultTemplates: Template[] = [
     subject: "Permintaan Konfirmasi Kehadiran Trial Class MNS",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Terima kasih telah mendaftarkan Ananda <strong>{{name}}</strong> untuk mengikuti Trial Class di MNS.</p>
+      <p>Terima kasih telah mendaftarkan {{name}}<strong>{{name}}</strong> untuk mengikuti Trial Class di MNS.</p>
 
-      <p>Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> telah tersedia dengan detail berikut:</p>
+      <p>Jadwal Trial Class untuk {{name}} <strong>{{name}}</strong> telah tersedia dengan detail berikut:</p>
 
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
@@ -347,7 +347,7 @@ const defaultTemplates: Template[] = [
                   margin: 20px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #856404;">
-          ⚠️ Mohon kesediaannya untuk memberikan konfirmasi kehadiran Ananda paling lambat <strong>{{confirmationDeadline}}</strong> sebelum jadwal yang telah ditentukan.
+          ⚠️ Mohon kesediaannya untuk memberikan konfirmasi kehadiran <strong>{{name}}</strong> paling lambat <strong>{{confirmationDeadline}}</strong> sebelum jadwal yang telah ditentukan.
         </p>
       </div>
 
@@ -447,7 +447,7 @@ const defaultTemplates: Template[] = [
     subject: "Sukses Konfirmasi Kehadiran Trial Class MNS",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
       <p>Konfirmasi kehadiran Anda telah kami terima. Berikut detail pelaksanaan Trial Class:</p>
 
@@ -490,7 +490,7 @@ const defaultTemplates: Template[] = [
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #155724;">
-          ✅ Kami menantikan kehadiran Ananda di Trial Class Multimedia Nusantara School.
+          ✅ Kami menantikan kehadiran <strong>{{name}}</strong> di Trial Class Multimedia Nusantara School.
         </p>
       </div>
 
@@ -557,9 +557,9 @@ const defaultTemplates: Template[] = [
     subject: "Reminder Trial Class MNS",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Kami ingin mengingatkan kembali jika Ananda akan mengikuti pelaksanaan Trial Class dengan rincian sebagai berikut.</p>
+      <p>Kami ingin mengingatkan kembali jika <strong>{{name}}</strong> akan mengikuti pelaksanaan Trial Class dengan rincian sebagai berikut.</p>
 
       <div style="background-color: #fff3cd; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #ffc107;">
         <h3 style="margin-top: 0; color: #856404;">
@@ -665,9 +665,9 @@ const defaultTemplates: Template[] = [
     subject: "Informasi Laporan Observasi Trial Class MNS",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Trial Class Ananda <strong>{{name}}</strong> telah selesai dilaksanakan.</p>
+      <p>Trial Class <strong>{{name}}</strong> telah selesai dilaksanakan.</p>
 
       <div style="background-color: #e7f3ff;
                   border-left: 4px solid #007bff;
@@ -739,9 +739,9 @@ const defaultTemplates: Template[] = [
     subject: "Surat Keputusan dan Hasil Observasi Trial Class MNS",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Observasi Trial Class Ananda <strong>{{name}}</strong> sudah selesai dan hasilnya dapat dilihat pada website PPDB Multimedia Nusantara School.</p>
+      <p>Observasi Trial Class <strong>{{name}}</strong> sudah selesai dan hasilnya dapat dilihat pada website PPDB Multimedia Nusantara School.</p>
 
       <div style="text-align: center; margin: 30px 0;">
         <a href="{{resultLink}}"
@@ -821,9 +821,9 @@ const defaultTemplates: Template[] = [
     subject: "Informasi Pembayaran Booking Fee MNS",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Untuk melanjutkan proses registrasi dan menempatkan Ananda di kelas reguler Multimedia Nusantara School, mohon kesediaannya untuk melakukan pembayaran Booking Fee sebelum <strong>{{paymentDeadline}}</strong></p>
+      <p>Untuk melanjutkan proses registrasi dan menempatkan <strong>{{name}}</strong> di kelas reguler Multimedia Nusantara School, mohon kesediaannya untuk melakukan pembayaran Booking Fee sebelum <strong>{{paymentDeadline}}</strong></p>
 
       <p>Informasi lengkap mengenai tata cara dan metode pembayaran dapat diakses melalui website PPDB MNS dibawah ini.</p>
 
@@ -851,7 +851,7 @@ const defaultTemplates: Template[] = [
       </div>
 
       <p style="font-size: 16px; line-height: 1.6;">
-        Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut Ananda dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
+        Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut <strong>{{name}}</strong> dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
@@ -911,9 +911,9 @@ const defaultTemplates: Template[] = [
     subject: "Pembayaran Booking Fee MNS Sukses",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Selamat! Pembayaran booking fee untuk pendaftaran Ananda telah berhasil kami terima dengan detail pembayaran sebagai berikut.</p>
+      <p>Selamat! Pembayaran booking fee untuk pendaftaran <strong>{{name}}</strong> telah berhasil kami terima dengan detail pembayaran sebagai berikut.</p>
 
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
@@ -967,7 +967,7 @@ const defaultTemplates: Template[] = [
       </div>
 
       <p style="font-size: 16px; line-height: 1.6;">
-        Silahkan melengkapi data Ananda melalui proses Re-enrollment pada website PPDB MNS untuk menyelesaikan proses registrasi.
+        Silahkan melengkapi data <strong>{{name}}</strong> melalui proses Re-enrollment pada website PPDB MNS untuk menyelesaikan proses registrasi.
       </p>
 
       <div style="text-align: center; margin: 30px 0;">
@@ -984,7 +984,7 @@ const defaultTemplates: Template[] = [
       </div>
 
       <p style="font-size: 16px; line-height: 1.6;">
-        Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut Ananda dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
+        Terima kasih atas kepercayaan yang diberikan kepada MNS. Kami tidak sabar menyambut <strong>{{name}}</strong> dalam perjalanan belajar yang menyenangkan di MNS! 🎓✨
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
@@ -1088,7 +1088,7 @@ const defaultTemplates: Template[] = [
     subject: "Re-enrollment Multimedia Nusantara School",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
       <p>Proses re-enrollment periode <strong>{{academicYear}}</strong> sudah dibuka.</p>
 
@@ -1188,7 +1188,7 @@ const defaultTemplates: Template[] = [
     subject: "Re-enrollment Multimedia Nusantara School Sukses",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
       <div style="background-color: #d4edda;
                   border-left: 4px solid #28a745;
@@ -1200,12 +1200,12 @@ const defaultTemplates: Template[] = [
           🎉 Selamat!
         </h3>
         <p style="margin: 0; color: #155724; font-size: 16px; line-height: 1.6;">
-          Proses Re-enrollment Ananda sudah selesai dan sudah kami verifikasi.
+          Proses Re-enrollment <strong>{{name}}</strong> sudah selesai dan sudah kami verifikasi.
         </p>
       </div>
 
       <p style="font-size: 16px; line-height: 1.6;">
-        Kami mengucapkan terima kasih karena sudah mempercayakan pendidikan Ananda <strong>{{name}}</strong> di Multimedia Nusantara School.
+        Kami mengucapkan terima kasih karena sudah mempercayakan pendidikan <strong>{{name}}</strong> di Multimedia Nusantara School.
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
@@ -1251,7 +1251,7 @@ const defaultTemplates: Template[] = [
     subject: "Pembayaran Trial Class dan Booking Fee MNS Sukses",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}},</h2>
+      <h2>Halo orang tua/wali {{name}},</h2>
 
       <p>Kami telah menerima pembayaran tagihan Anda dengan rincian sebagai berikut.</p>
 
@@ -1319,12 +1319,12 @@ const defaultTemplates: Template[] = [
                   margin: 25px 0;
                   border-radius: 4px;">
         <p style="margin: 0; color: #004085;">
-          ℹ️ Jadwal Trial Class untuk Ananda <strong>{{name}}</strong> sedang kami persiapkan. Kami akan segera menginformasikan kembali begitu jadwal tersedia.
+          ℹ️ Jadwal Trial Class untuk <strong>{{name}}</strong> sedang kami persiapkan. Kami akan segera menginformasikan kembali begitu jadwal tersedia.
         </p>
       </div>
 
       <p style="font-size: 16px; line-height: 1.6;">
-        Kami sangat menantikan kehadiran Ananda di Trial Class MNS. Sampai jumpa dan rasakan pengalaman belajar yang menyenangkan bersama MNS! 🎓✨
+        Kami sangat menantikan kehadiran <strong>{{name}}</strong> di Trial Class MNS. Sampai jumpa dan rasakan pengalaman belajar yang menyenangkan bersama MNS! 🎓✨
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
@@ -1428,7 +1428,7 @@ const defaultTemplates: Template[] = [
     subject: "Informasi Tagihan Multimedia Nusantara School",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
+      <h2>Halo orang tua/wali {{name}} dengan NIS <strong>{{studentId}}</strong>,</h2>
 
       <p>Kami sampaikan bahwa saat ini terdapat tagihan baru dengan rincian sebagai berikut.</p>
 
@@ -1591,7 +1591,7 @@ const defaultTemplates: Template[] = [
     subject: "Pembayaran Tagihan Multimedia Nusantara School Sukses",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
+      <h2>Halo orang tua/wali {{name}} dengan NIS <strong>{{studentId}}</strong>,</h2>
 
       <p>Kami telah menerima pembayaran tagihan Anda dengan rincian sebagai berikut.</p>
 
@@ -1774,7 +1774,7 @@ const defaultTemplates: Template[] = [
     subject: "Reminder Pembayaran Tagihan Multimedia Nusantara School",
     body: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2>Halo orang tua/wali Ananda {{name}} dengan NIS {{studentId}},</h2>
+      <h2>Halo orang tua/wali {{name}} dengan NIS <strong>{{studentId}}</strong>,</h2>
 
       <p>Kami mengingatkan untuk melakukan pembayaran tagihan berikut karena sudah mendekati tanggal jatuh tempo.</p>
 
