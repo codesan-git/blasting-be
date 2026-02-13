@@ -369,11 +369,46 @@ Send message blast (Email, WhatsApp, or Both)
   - `email` (optional): Email address (required if using email channel)
   - `phone` (optional): Phone number with country code (required if using WhatsApp)
   - `name` (required): Recipient name
-  - `variables` (optional): Custom variables per recipient
+  - `variables` (optional): Custom variables per recipient (merged with globalVariables; recipient vars take precedence)
 - `channels` (required): Array of channels `["email"]`, `["whatsapp"]`, or `["email", "whatsapp"]`
 - `templateId` (required): Template ID to use
 - `globalVariables` (optional): Variables applied to all recipients
 - `from` (required for email): Sender email address
+
+**Template variables (tanggal & jadwal):**  
+Untuk template yang menampilkan tanggal (pembayaran, trial class, jatuh tempo), gunakan variabel **nama hari terpisah** (nilai: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu) dan variabel tanggal/waktu:
+
+| Template ID | Variabel nama hari | Variabel tanggal/waktu |
+|-------------|--------------------|-------------------------|
+| `trial_class_payment_success` | `paymentDateDay` | `paymentDate` |
+| `trial_class_attending_confirmation2` | `trialDateDay` | `trialDate`, `trialTime`, `trialLocation` |
+| `trial_class_attending_confirmed` | `trialDateDay` | `trialDate`, `trialTime`, `trialLocation` |
+| `trial_class_reminder` | `trialDateDay` | `trialDate`, `trialTime`, `trialLocation` |
+| `booking_fee_payment_success` | `paymentDateDay` | `paymentDate` |
+| `trial_class_booking_fee_payment_success` | `paymentDateDay` | `paymentDate`, `billingList` |
+| `standard_bill_posting` | `dueDateDay` | `dueDate` |
+| `standard_bill_payment_success` | `paymentDateDay` | `paymentDate`, `billingList` |
+| `standard_bill_reminder` | `dueDateDay` | `dueDate` |
+
+Contoh `globalVariables` atau `recipients[].variables` untuk template dengan tanggal:
+
+```json
+{
+  "paymentDateDay": "Kamis",
+  "paymentDate": "06-Nov-25, 14:30 WIB"
+}
+```
+
+```json
+{
+  "trialDateDay": "Kamis",
+  "trialDate": "25 Desember 2026",
+  "trialTime": "16:30 WIB",
+  "trialLocation": "Ruang 502, Gedung A lantai 5 MNS"
+}
+```
+
+Daftar lengkap variabel per template bisa dilihat dari **GET `/api/templates/:id`** (field `variables` dan `variableRequirements`).
 
 **Response:**
 
@@ -901,5 +936,9 @@ ISC
 
 ---
 
-**Last Updated:** November 1, 2025  
+**Last Updated:** February 2026  
 **Version:** 1.0.0
+
+---
+
+**Catatan:** Dokumentasi API yang dipublikasi di Postman ([Message Blast Service API](https://documenter.getpostman.com/view/30073719/2sB3WwpcTC)) sebaiknya disinkronkan dengan file ini. Edit dokumen Postman via Postman app (Collection → View Docs / Publish) atau dengan mengimpor ulang collection jika ada file export-nya di repo.
