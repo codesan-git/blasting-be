@@ -176,7 +176,7 @@ const defaultTemplates: Template[] = [
               <strong>Tanggal Pembayaran:</strong>
             </td>
             <td style="padding: 10px 0; text-align: right;">
-              {{paymentDate}}
+              {{paymentDateDay}}, {{paymentDate}}
             </td>
           </tr>
         </table>
@@ -217,6 +217,7 @@ const defaultTemplates: Template[] = [
       "paymentMethod",
       "referenceNumber",
       "paymentAmount",
+      "paymentDateDay",
       "paymentDate",
     ],
     variableRequirements: [
@@ -256,6 +257,13 @@ const defaultTemplates: Template[] = [
         example: "Rp200.000",
       },
       {
+        name: "paymentDateDay",
+        description: "Nama hari tanggal pembayaran (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
+      },
+      {
         name: "paymentDate",
         description: "Tanggal dan waktu pembayaran dengan timezone",
         required: true,
@@ -289,9 +297,9 @@ const defaultTemplates: Template[] = [
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2>Halo orang tua/wali {{name}},</h2>
 
-      <p>Terima kasih telah mendaftarkan {{name}}<strong>{{name}}</strong> untuk mengikuti Trial Class di MNS.</p>
+      <p>Terima kasih telah mendaftarkan <strong>{{name}}</strong> untuk mengikuti Trial Class di MNS.</p>
 
-      <p>Jadwal Trial Class untuk {{name}} <strong>{{name}}</strong> telah tersedia dengan detail berikut:</p>
+      <p>Jadwal Trial Class untuk <strong>{{name}}</strong> telah tersedia dengan detail berikut:</p>
 
       <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h3 style="margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
@@ -304,7 +312,7 @@ const defaultTemplates: Template[] = [
               <strong>Tanggal:</strong>
             </td>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
-              {{trialDate}}
+              {{trialDateDay}}, {{trialDate}}
             </td>
           </tr>
           <tr>
@@ -372,6 +380,7 @@ const defaultTemplates: Template[] = [
   `,
     variables: [
       "name",
+      "trialDateDay",
       "trialDate",
       "trialTime",
       "trialLocation",
@@ -385,6 +394,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "John Doe",
+      },
+      {
+        name: "trialDateDay",
+        description: "Nama hari jadwal trial class (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
       },
       {
         name: "trialDate",
@@ -462,7 +478,7 @@ const defaultTemplates: Template[] = [
               <strong>Tanggal:</strong>
             </td>
             <td style="padding: 10px 0; border-bottom: 1px solid #dee2e6; text-align: right;">
-              {{trialDate}}
+              {{trialDateDay}}, {{trialDate}}
             </td>
           </tr>
           <tr>
@@ -509,7 +525,7 @@ const defaultTemplates: Template[] = [
       </div>
     </div>
   `,
-    variables: ["name", "trialDate", "trialTime", "trialLocation"],
+    variables: ["name", "trialDateDay", "trialDate", "trialTime", "trialLocation"],
     variableRequirements: [
       {
         name: "name",
@@ -517,6 +533,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "John Doe",
+      },
+      {
+        name: "trialDateDay",
+        description: "Nama hari jadwal trial class (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
       },
       {
         name: "trialDate",
@@ -572,7 +595,7 @@ const defaultTemplates: Template[] = [
               <strong>Tanggal:</strong>
             </td>
             <td style="padding: 10px 0; border-bottom: 1px solid #fff8dc; text-align: right;">
-              {{trialDate}}
+              {{trialDateDay}}, {{trialDate}}
             </td>
           </tr>
           <tr>
@@ -617,7 +640,7 @@ const defaultTemplates: Template[] = [
       </div>
     </div>
   `,
-    variables: ["name", "trialDate", "trialTime", "trialLocation"],
+    variables: ["name", "trialDateDay", "trialDate", "trialTime", "trialLocation"],
     variableRequirements: [
       {
         name: "name",
@@ -625,6 +648,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "John Doe",
+      },
+      {
+        name: "trialDateDay",
+        description: "Nama hari jadwal trial class (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
       },
       {
         name: "trialDate",
@@ -960,7 +990,7 @@ const defaultTemplates: Template[] = [
               <strong>Tanggal Pembayaran:</strong>
             </td>
             <td style="padding: 10px 0; text-align: right;">
-              {{paymentDate}}
+              {{paymentDateDay}}, {{paymentDate}}
             </td>
           </tr>
         </table>
@@ -1008,6 +1038,7 @@ const defaultTemplates: Template[] = [
       "paymentMethod",
       "referenceNumber",
       "paymentAmount",
+      "paymentDateDay",
       "paymentDate",
       "reenrollmentLink",
     ],
@@ -1046,6 +1077,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "Rp3.000.000",
+      },
+      {
+        name: "paymentDateDay",
+        description: "Nama hari tanggal pembayaran (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
       },
       {
         name: "paymentDate",
@@ -1300,7 +1338,7 @@ const defaultTemplates: Template[] = [
               <strong>Tanggal Pembayaran:</strong>
             </td>
             <td style="padding: 10px 0; text-align: right;">
-              {{paymentDate}}
+              {{paymentDateDay}}, {{paymentDate}}
             </td>
           </tr>
         </table>
@@ -1348,6 +1386,7 @@ const defaultTemplates: Template[] = [
       "paymentMethod",
       "referenceNumber",
       "paymentAmount",
+      "paymentDateDay",
       "paymentDate",
       "billingList",
     ],
@@ -1386,6 +1425,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "Rp3.200.000",
+      },
+      {
+        name: "paymentDateDay",
+        description: "Nama hari tanggal pembayaran (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Senin",
       },
       {
         name: "paymentDate",
@@ -1475,7 +1521,7 @@ const defaultTemplates: Template[] = [
               <strong>Jatuh Tempo:</strong>
             </td>
             <td style="padding: 10px 0; text-align: right; font-weight: bold;">
-              {{dueDate}}
+              {{dueDateDay}}, {{dueDate}}
             </td>
           </tr>
         </table>
@@ -1513,6 +1559,7 @@ const defaultTemplates: Template[] = [
       "billType",
       "billingNumber",
       "billAmount",
+      "dueDateDay",
       "dueDate",
     ],
     variableRequirements: [
@@ -1557,6 +1604,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "Rp2.150.000",
+      },
+      {
+        name: "dueDateDay",
+        description: "Nama hari jatuh tempo (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
       },
       {
         name: "dueDate",
@@ -1640,7 +1694,7 @@ const defaultTemplates: Template[] = [
               <strong>Tanggal Pembayaran:</strong>
             </td>
             <td style="padding: 10px 0; text-align: right;">
-              {{paymentDate}}
+              {{paymentDateDay}}, {{paymentDate}}
             </td>
           </tr>
         </table>
@@ -1685,6 +1739,7 @@ const defaultTemplates: Template[] = [
       "paymentMethod",
       "referenceNumber",
       "paymentAmount",
+      "paymentDateDay",
       "paymentDate",
       "billingList",
     ],
@@ -1730,6 +1785,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "Rp15.000.000",
+      },
+      {
+        name: "paymentDateDay",
+        description: "Nama hari tanggal pembayaran (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
       },
       {
         name: "paymentDate",
@@ -1821,7 +1883,7 @@ const defaultTemplates: Template[] = [
               <strong>Jatuh Tempo:</strong>
             </td>
             <td style="padding: 10px 0; text-align: right; font-weight: bold; color: #dc3545;">
-              {{dueDate}}
+              {{dueDateDay}}, {{dueDate}}
             </td>
           </tr>
         </table>
@@ -1859,6 +1921,7 @@ const defaultTemplates: Template[] = [
       "billType",
       "billingNumber",
       "billAmount",
+      "dueDateDay",
       "dueDate",
     ],
     variableRequirements: [
@@ -1903,6 +1966,13 @@ const defaultTemplates: Template[] = [
         required: true,
         type: "string",
         example: "Rp2.150.000",
+      },
+      {
+        name: "dueDateDay",
+        description: "Nama hari jatuh tempo (Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu)",
+        required: true,
+        type: "string",
+        example: "Kamis",
       },
       {
         name: "dueDate",
