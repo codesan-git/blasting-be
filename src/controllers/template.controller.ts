@@ -302,6 +302,9 @@ export const previewTemplate = async (
       return;
     }
 
+    // Isi variabel nama hari dari tanggal jika belum dikirim
+    TemplateService.enrichDateDayVariables(template, variables);
+
     // Validate
     const variableValidation = TemplateService.validateVariables(id, variables);
     const attachmentValidation = TemplateService.validateAttachments(

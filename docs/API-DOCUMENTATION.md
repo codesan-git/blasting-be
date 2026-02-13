@@ -376,39 +376,33 @@ Send message blast (Email, WhatsApp, or Both)
 - `from` (required for email): Sender email address
 
 **Template variables (tanggal & jadwal):**  
-Untuk template yang menampilkan tanggal (pembayaran, trial class, jatuh tempo), gunakan variabel **nama hari terpisah** (nilai: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu) dan variabel tanggal/waktu:
+Untuk template yang menampilkan tanggal, **cukup satu variabel tanggal** per konteks. Frontend mengirim nilai tanggal saja (mis. `"20 Desember 2025"`); backend akan mem-parse, menentukan nama hari, dan menampilkan sebagai **"Hari, Tanggal"** (mis. `Sabtu, 20 Desember 2025`).
 
-| Template ID | Variabel nama hari | Variabel tanggal/waktu |
-|-------------|--------------------|-------------------------|
-| `trial_class_payment_success` | `paymentDateDay` | `paymentDate` |
-| `trial_class_attending_confirmation2` | `trialDateDay` | `trialDate`, `trialTime`, `trialLocation` |
-| `trial_class_attending_confirmed` | `trialDateDay` | `trialDate`, `trialTime`, `trialLocation` |
-| `trial_class_reminder` | `trialDateDay` | `trialDate`, `trialTime`, `trialLocation` |
-| `booking_fee_payment_success` | `paymentDateDay` | `paymentDate` |
-| `trial_class_booking_fee_payment_success` | `paymentDateDay` | `paymentDate`, `billingList` |
-| `standard_bill_posting` | `dueDateDay` | `dueDate` |
-| `standard_bill_payment_success` | `paymentDateDay` | `paymentDate`, `billingList` |
-| `standard_bill_reminder` | `dueDateDay` | `dueDate` |
+| Konteks | Variabel | Contoh nilai dari frontend |
+|---------|----------|----------------------------|
+| Tanggal pembayaran | `paymentDate` | `20 Desember 2025` atau `06-Nov-25, 14:30 WIB` |
+| Jadwal trial class | `trialDate` | `25 Desember 2026` |
+| Jatuh tempo tagihan | `dueDate` | `25-MAR-26, 10:30 WIB` |
 
-Contoh `globalVariables` atau `recipients[].variables` untuk template dengan tanggal:
+Contoh `globalVariables` atau `recipients[].variables`:
 
 ```json
 {
-  "paymentDateDay": "Kamis",
-  "paymentDate": "06-Nov-25, 14:30 WIB"
+  "paymentDate": "20 Desember 2025"
 }
 ```
 
 ```json
 {
-  "trialDateDay": "Kamis",
   "trialDate": "25 Desember 2026",
   "trialTime": "16:30 WIB",
   "trialLocation": "Ruang 502, Gedung A lantai 5 MNS"
 }
 ```
 
-Daftar lengkap variabel per template bisa dilihat dari **GET `/api/templates/:id`** (field `variables` dan `variableRequirements`).
+Daftar lengkap variabel per template: **GET `/api/templates/:id`** (field `variables` dan `variableRequirements`).
+
+**Format tanggal yang didukung (untuk auto-nama hari):** ISO 8601 (`2026-12-25`, `2026-12-25T16:30:00+07:00`), atau teks seperti `20 Desember 2025`, `06-Nov-25`. Jika nilai sudah berformat `"Sabtu, 20 Desember 2025"`, backend tidak menambah lagi.
 
 **Response:**
 

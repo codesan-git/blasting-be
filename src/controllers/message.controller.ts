@@ -138,6 +138,9 @@ export const sendMessageBlast = async (
         phone: recipient.phone || "",
       };
 
+      // Isi variabel nama hari dari tanggal jika template butuh tapi belum dikirim (sebelum validasi required)
+      TemplateService.enrichDateDayVariables(template, mergedVariables);
+
       // Check basic recipient fields only if template requires them OR channel needs them
       const templateNeedsName = template.variableRequirements?.some(
         (req) => req.name === "name" && req.required,
@@ -337,6 +340,9 @@ export const sendMessageBlast = async (
         email: recipient.email || "",
         phone: recipient.phone || "",
       };
+
+      // Isi variabel nama hari dari tanggal jika template butuh tapi frontend tidak kirim
+      TemplateService.enrichDateDayVariables(template, variables);
 
       logger.debug("Processing recipient with variables", {
         recipient: recipient.name,
