@@ -121,7 +121,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_payment_success",
+    id: "trial_class_payment_success_2",
     name: "Pembayaran Trial Class MNS Berhasil",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -266,7 +266,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_payment_success",
+      templateName: "trial_class_payment_success_2",
       languageCode: "id",
       bodyVariables: [
         "name",
@@ -281,7 +281,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_attending_confirmation2",
+    id: "trial_class_attending_confirmation2_3",
     name: "Konfirmasi Kehadiran Trial Class MNS",
     type: TemplateType.REMINDER,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -426,7 +426,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_attending_confirmation2",
+      templateName: "trial_class_attending_confirmation2_3",
       languageCode: "id",
       bodyVariables: [
         "name",
@@ -441,7 +441,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_attending_confirmed",
+    id: "trial_class_attending_confirmed_2",
     name: "Konfirmasi Kehadiran Trial Class MNS Berhasil",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -543,7 +543,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_attending_confirmed",
+      templateName: "trial_class_attending_confirmed_2",
       languageCode: "id",
       bodyVariables: ["name", "trialDate", "trialTime", "trialLocation"],
     },
@@ -551,7 +551,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_reminder",
+    id: "trial_class_reminder_3",
     name: "Reminder Trial Class MNS",
     type: TemplateType.REMINDER,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -651,7 +651,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_reminder",
+      templateName: "trial_class_reminder_3",
       languageCode: "id",
       bodyVariables: ["name", "trialDate", "trialTime", "trialLocation"],
     },
@@ -659,7 +659,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_on_review",
+    id: "trial_class_on_review_2",
     name: "Informasi Laporan Observasi Trial Class MNS",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -725,7 +725,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_on_review",
+      templateName: "trial_class_on_review_2",
       languageCode: "id",
       bodyVariables: ["name", "deliveryDays"],
     },
@@ -733,7 +733,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_student_result",
+    id: "trial_class_student_result_2",
     name: "Surat Keputusan dan Hasil Observasi Trial Class MNS",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -806,7 +806,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_student_result",
+      templateName: "trial_class_student_result_2",
       languageCode: "id",
       bodyVariables: ["name"],
       buttonVariables: ["resultLink"],
@@ -815,7 +815,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "booking_fee_reminder",
+    id: "booking_fee_reminder_2",
     name: "Informasi Pembayaran Booking Fee MNS",
     type: TemplateType.REMINDER,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -896,7 +896,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "booking_fee_reminder",
+      templateName: "booking_fee_reminder_2",
       languageCode: "id",
       bodyVariables: ["name", "paymentDeadline"],
       buttonVariables: ["paymentInfoLink"],
@@ -905,7 +905,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "booking_fee_payment_success",
+    id: "booking_fee_payment_success_2",
     name: "Pembayaran Booking Fee MNS Berhasil",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -1066,7 +1066,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "booking_fee_payment_success",
+      templateName: "booking_fee_payment_success_2",
       languageCode: "id",
       bodyVariables: [
         "name",
@@ -1082,7 +1082,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "reenrollment_reminder",
+    id: "reenrollment_reminder_2",
     name: "Re-enrollment Multimedia Nusantara School",
     type: TemplateType.REMINDER,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -1173,7 +1173,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "reenrollment_reminder",
+      templateName: "reenrollment_reminder_2",
       languageCode: "id",
       bodyVariables: ["name", "academicYear", "bookingFeeDeadline"],
       buttonVariables: ["ppdbWebsiteLink"],
@@ -1182,7 +1182,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "reenrollment_successful",
+    id: "reenrollment_successful_2",
     name: "Re-enrollment Multimedia Nusantara School Sukses",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -1237,7 +1237,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "reenrollment_successful",
+      templateName: "reenrollment_successful_2",
       languageCode: "id",
       bodyVariables: ["name"],
     },
@@ -1245,7 +1245,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_booking_fee_payment_success",
+    id: "trial_class_booking_fee_payment_success_2",
     name: "Pembayaran Trial Class dan Booking Fee MNS Berhasil",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -1406,7 +1406,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_booking_fee_payment_success",
+      templateName: "trial_class_booking_fee_payment_success_2",
       languageCode: "id",
       bodyVariables: [
         "name",
@@ -1585,7 +1585,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "standard_bill_payment_success",
+    id: "standard_bill_payment_success_2",
     name: "Pembayaran Tagihan Multimedia Nusantara School Sukses",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -1751,7 +1751,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "standard_bill_payment_success",
+      templateName: "standard_bill_payment_success_2",
       languageCode: "id",
       bodyVariables: [
         "name",
@@ -1768,7 +1768,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "standard_bill_reminder",
+    id: "standard_bill_reminder_2",
     name: "Reminder Pembayaran Tagihan Multimedia Nusantara School",
     type: TemplateType.REMINDER,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -1915,7 +1915,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "standard_bill_reminder",
+      templateName: "standard_bill_reminder_2",
       languageCode: "id",
       bodyVariables: [
         "name",
