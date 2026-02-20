@@ -115,7 +115,6 @@ const defaultTemplates: Template[] = [
       languageCode: "id",
       headerVariables: ["period"],
       bodyVariables: ["name", "period", "invoiceNumber", "amount"],
-      buttonVariables: ["invoiceNumber"],
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -377,7 +376,6 @@ const defaultTemplates: Template[] = [
       "trialTime",
       "trialLocation",
       "confirmationDeadline",
-      "confirmationLink",
     ],
     variableRequirements: [
       {
@@ -416,13 +414,6 @@ const defaultTemplates: Template[] = [
         type: "string",
         example: "H-2",
       },
-      {
-        name: "confirmationLink",
-        description: "Link untuk konfirmasi kehadiran trial class",
-        required: true,
-        type: "string",
-        example: "https://ppdb.mns.sch.id/dashboard/trial-class/student-123",
-      },
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
@@ -435,7 +426,6 @@ const defaultTemplates: Template[] = [
         "trialLocation",
         "confirmationDeadline",
       ],
-      buttonVariables: ["confirmationLink"],
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -786,7 +776,7 @@ const defaultTemplates: Template[] = [
       </div>
     </div>
   `,
-    variables: ["name", "resultLink"],
+    variables: ["name"],
     variableRequirements: [
       {
         name: "name",
@@ -795,21 +785,12 @@ const defaultTemplates: Template[] = [
         type: "string",
         example: "John Doe",
       },
-      {
-        name: "resultLink",
-        description:
-          "Link ke halaman hasil observasi dan surat keputusan trial class",
-        required: true,
-        type: "string",
-        example: "https://ppdb.mns.sch.id/dashboard/trial-class/student-123",
-      },
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
       templateName: "trial_class_student_result_2",
       languageCode: "id",
       bodyVariables: ["name"],
-      buttonVariables: ["resultLink"],
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -870,7 +851,7 @@ const defaultTemplates: Template[] = [
       </div>
     </div>
   `,
-    variables: ["name", "paymentDeadline", "paymentInfoLink"],
+    variables: ["name", "paymentDeadline"],
     variableRequirements: [
       {
         name: "name",
@@ -886,20 +867,12 @@ const defaultTemplates: Template[] = [
         type: "string",
         example: "25-Dec-2026, 16:30 WIB",
       },
-      {
-        name: "paymentInfoLink",
-        description: "Link ke halaman informasi pembayaran booking fee",
-        required: true,
-        type: "string",
-        example: "https://ppdb.mns.sch.id/dashboard/booking-fee/student-123",
-      },
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
       templateName: "booking_fee_reminder_2",
       languageCode: "id",
       bodyVariables: ["name", "paymentDeadline"],
-      buttonVariables: ["paymentInfoLink"],
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -1010,7 +983,6 @@ const defaultTemplates: Template[] = [
       "referenceNumber",
       "paymentAmount",
       "paymentDate",
-      "reenrollmentLink",
     ],
     variableRequirements: [
       {
@@ -1055,14 +1027,6 @@ const defaultTemplates: Template[] = [
         type: "string",
         example: "06-Nov-25, 14:30 WIB",
       },
-      {
-        name: "reenrollmentLink",
-        description:
-          "Link ke halaman re-enrollment untuk melengkapi data siswa",
-        required: true,
-        type: "string",
-        example: "https://ppdb.mns.sch.id/dashboard/re-enrollment",
-      },
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
@@ -1076,7 +1040,6 @@ const defaultTemplates: Template[] = [
         "paymentAmount",
         "paymentDate",
       ],
-      buttonVariables: ["reenrollmentLink"],
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -1138,7 +1101,6 @@ const defaultTemplates: Template[] = [
       "name",
       "academicYear",
       "bookingFeeDeadline",
-      "ppdbWebsiteLink",
     ],
     variableRequirements: [
       {
@@ -1163,20 +1125,12 @@ const defaultTemplates: Template[] = [
         type: "string",
         example: "26 July 2026, 16:30 WIB",
       },
-      {
-        name: "ppdbWebsiteLink",
-        description: "Link ke website PPDB MNS untuk proses re-enrollment",
-        required: true,
-        type: "string",
-        example: "https://ppdb.mns.sch.id/dashboard/re-enrollment",
-      },
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
       templateName: "reenrollment_reminder_3",
       languageCode: "id",
       bodyVariables: ["name", "academicYear", "bookingFeeDeadline"],
-      buttonVariables: ["ppdbWebsiteLink"],
     },
     createdAt: new Date(),
     updatedAt: new Date(),
