@@ -121,7 +121,7 @@ const defaultTemplates: Template[] = [
     updatedAt: new Date(),
   },
   {
-    id: "trial_class_payment_success_2",
+    id: "trial_class_payment_success_3",
     name: "Pembayaran Trial Class MNS Berhasil",
     type: TemplateType.NOTIFICATION,
     channels: [ChannelType.EMAIL, ChannelType.WHATSAPP],
@@ -266,7 +266,7 @@ const defaultTemplates: Template[] = [
     ],
     qiscusConfig: {
       namespace: "b393932b_0056_4389_a284_c45fb5f78ef0",
-      templateName: "trial_class_payment_success_2",
+      templateName: "trial_class_payment_success_3",
       languageCode: "id",
       bodyVariables: [
         "name",
